@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use App\Contracts\FlightDataFactory;
+use App\Contracts\StatusUpdater;
 use App\Services\N8nFlightDataFactory;
+use App\Services\N8nStatusUpdaterService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -18,6 +20,12 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             FlightDataFactory::class,
             N8nFlightDataFactory::class
+        );
+
+        // Bind the StatusUpdater interface so services/controllers can inject it directly
+        $this->app->bind(
+            StatusUpdater::class,
+            N8nStatusUpdaterService::class
         );
     }
 

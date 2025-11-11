@@ -10,8 +10,14 @@ class FisDbFlightReaderService implements FlightReader
 {
     public function getFlightDetails(string $identifier)
     {
-        // Load relationships (e.g., originAirport) for immediate use
-        $query = Flight::with(['originAirport', 'destinationAirport', 'status']);
+        // Eager-load relationships using the actual relation names from App\Models\Flight
+        $query = Flight::with([
+            'origin',
+            'destination',
+            'status',
+            'departure.gate.terminal',
+            'arrival.baggageClaim.terminal',
+        ]);
         
         // Find by ID or flight_number
         $flight = $query->find($identifier);

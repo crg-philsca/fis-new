@@ -1,7 +1,13 @@
-### Test 1: Sync New Airport (LHR)
+### Flight Integration & Admin Ops HTTP Tests
+### Base URL variable for easy switching
+@baseUrl = http://fis-new.test
+@cid = {{$random.uuid}}
+@admin_token = REPLACE_WITH_VALID_ADMIN_BEARER_TOKEN
 
-POST http://fis-new.test/api/v1/integration/airport-sync HTTP/1.1
+### 1. Sync / Upsert Airport (Inbound Integration)
+POST {{baseUrl}}/api/v1/sync/airport
 Content-Type: application/json
+X-Correlation-ID: {{cid}}
 
 {
     "iata_code": "LHR",
@@ -11,12 +17,69 @@ Content-Type: application/json
     "timezone": "Europe/London"
 }
 
-### Test 2: Update Flight Status (ATC/N8n Integration)
-POST http://fis-new.test/api/v1/integration/status-update
+### 2. Sync / Upsert Flight (Inbound Integration)
+POST {{baseUrl}}/api/v1/sync/flight
 Content-Type: application/json
+X-Correlation-ID: {{cid}}
 
 {
-"flight_id": 1,
-"status_code": "DEP",
-"timestamp": "2025-11-10T12:00:00Z"
+    "flight_number": "BA117",
+    "flight_id": 117,
+    "origin_iata": "LHR",
+    "destination_iata": "JFK",
+    "status_code": "SCH",
+    "scheduled_departure_time": "2025-11-12 08:00:00",
+    "scheduled_arrival_time": "2025-11-12 11:15:00"
 }
+
+### 3. Update Flight Status (Inbound ATC/N8n event)
+POST {{baseUrl}}/api/v1/sync/status
+Content-Type: application/json
+X-Correlation-ID: {{cid}}
+
+{
+    "flight_id": 117,
+    "status_code": "DEP",
+    "timestamp": "2025-11-12T08:05:00Z"
+}
+
+### 4. Admin: Update Flight Time (Outbound notification path)
+### Requires Auth (token or session); add Authorization header as needed.
+POST {{baseUrl}}/api/v1/admin/flights/117/time
+Content-Type: application/json
+X-Correlation-ID: {{cid}}
+Authorization: Bearer {{admin_token}}
+
+{
+    "time_type": "scheduled_departure",
+    "new_time": "2025-11-12 08:20:00"
+}
+
+### 5. Admin: Update Gate
+POST {{baseUrl}}/api/v1/admin/flights/117/gate
+Content-Type: application/json
+X-Correlation-ID: {{cid}}
+Authorization: Bearer {{admin_token}}
+
+{
+    "gate_id": 12
+}
+
+### 6. Admin: Update Baggage Claim
+POST {{baseUrl}}/api/v1/admin/flights/117/baggage
+Content-Type: application/json
+X-Correlation-ID: {{cid}}
+Authorization: Bearer {{admin_token}}
+
+{
+    "baggage_claim_id": 7
+}
+
+### 7. Public: Read Flight
+GET {{baseUrl}}/api/v1/public/flights/117
+X-Correlation-ID: {{cid}}
+
+### Notes:
+### - Replace {{admin_token}} with a valid admin bearer token.
+### - X-Correlation-ID allows tracing through n8n and logs.
+### - Ensure ENV webhook URLs set: N8N_WEBHOOK_STATUS_CHANGE, N8N_WEBHOOK_TIME_UPDATE, etc.

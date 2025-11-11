@@ -2,27 +2,27 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations;
 
+/**
+ * @property int $id
+ * @property string $status_code
+ * @property string $status_name
+ */
 class FlightStatus extends Model
 {
-    // Database Table Name
-    protected $table = 'flight_status';
-    
-    // Mass Assignable Fields
-    protected $fillable = [
-        'status_code',
-        'status_name',
-    ];
+    use HasFactory;
 
-    // Disable default timestamps, as the 'timestamp' column is manually managed
+    protected $table = 'flight_status';
     public $timestamps = false;
 
-    // --- Relationships ---
-
-    // Flights associated with this status
-    public function flights()
+    /**
+     * Get all flights currently in this status.
+     */
+    public function flights(): Relations\HasMany
     {
-        return $this->hasMany(Flight::class, 'status_id', 'id');
+        return $this->hasMany(Flight::class, 'status_id');
     }
 }

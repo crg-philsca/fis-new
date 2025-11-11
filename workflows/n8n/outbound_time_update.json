@@ -1,0 +1,123 @@
+{
+  "name": "Outbound Time Update (FIS -> External)",
+  "nodes": [
+    {
+      "id": "Webhook_From_FIS",
+      "name": "FIS Time Update Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [280, 180],
+      "parameters": {
+        "path": "time-update",
+        "httpMethod": "POST",
+        "responseMode": "onReceived",
+        "options": {
+          "rawBody": false
+        }
+      }
+    },
+    {
+      "id": "Set_CID",
+      "name": "Set Correlation ID",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [520, 180],
+      "parameters": {
+        "functionCode": "const hdr = $json.headers || {};\nlet cid = hdr['x-correlation-id'] || hdr['X-Correlation-ID'];\nif (!cid) cid = $uuid();\nreturn [{ json: { correlation_id: cid, payload: $json.body || $json } }];"
+      }
+    },
+    {
+      "id": "Map_To_External",
+      "name": "Map To External",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [760, 180],
+      "parameters": {
+        "functionCode": "const p = $json.payload;\nreturn [{ json: {\n  flightId: p.flight_id || p.id,\n  type: p.time_type,\n  newTimeIso: new Date(p.new_time || p.newTime).toISOString(),\n  correlationId: $json.correlation_id\n}}];"
+      }
+    },
+    {
+      "id": "HTTP_External",
+      "name": "POST External Time Update",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [1000, 180],
+      "parameters": {
+        "url": "={{ $env.EXTERNAL_TIME_UPDATE_URL }}",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {},
+        "sendBody": true,
+        "bodyParametersJson": "={{ JSON.stringify($json) }}",
+        "headerParametersJson": "={\n  \"X-Correlation-ID\": $json.correlationId\n}"
+      }
+    },
+    {
+      "id": "If_OK",
+      "name": "If OK",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1240, 180],
+      "parameters": {
+        "conditions": {
+          "number": [
+            { "value1": "={{$json.statusCode}}", "operation": "equal", "value2": 200 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Respond_Success",
+      "name": "Respond 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1480, 120],
+      "parameters": {
+        "responseBody": "={ ok: true, correlation_id: $json.correlationId }",
+        "responseCode": 200
+      }
+    },
+    {
+      "id": "Respond_500",
+      "name": "Respond 500",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1480, 260],
+      "parameters": {
+        "responseBody": "={ ok: false, correlation_id: $json.correlationId }",
+        "responseCode": 500
+      }
+    }
+  ],
+  "connections": {
+    "FIS Time Update Webhook": {
+      "main": [
+        [ { "node": "Set Correlation ID", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Set Correlation ID": {
+      "main": [
+        [ { "node": "Map To External", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Map To External": {
+      "main": [
+        [ { "node": "POST External Time Update", "type": "main", "index": 0 } ]
+      ]
+    },
+    "POST External Time Update": {
+      "main": [
+        [ { "node": "If OK", "type": "main", "index": 0 } ]
+      ]
+    },
+    "If OK": {
+      "main": [
+        [ { "node": "Respond 200", "type": "main", "index": 0 } ],
+        [ { "node": "Respond 500", "type": "main", "index": 0 } ]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {},
+  "versionId": "outbound-time-update-v1"
+}

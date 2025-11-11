@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+    // N8n webhook endpoints for outbound notifications
+    'n8n' => [
+        'webhooks' => [
+            'gate_change'   => env('N8N_WEBHOOK_GATE_CHANGE'),
+            'baggage_change'=> env('N8N_WEBHOOK_BAGGAGE_CHANGE'),
+            'time_update'   => env('N8N_WEBHOOK_TIME_UPDATE'),
+            'departure'     => env('N8N_WEBHOOK_DEPARTURE'),
+            'arrival'       => env('N8N_WEBHOOK_ARRIVAL'),
+            'status_change' => env('N8N_WEBHOOK_STATUS_CHANGE'),
+        ],
+    ],
+
 ];

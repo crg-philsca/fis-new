@@ -13,4 +13,7 @@ interface FlightDataFactory
     
     // Creates a handler responsible for syncing Airport reference data (Product 3).
     public function createAirportCreator(): AirportCreator;
+
+    // Creates a handler responsible for syncing flight master data (Product 4).
+    public function createFlightSyncer(): FlightSyncer;
 }

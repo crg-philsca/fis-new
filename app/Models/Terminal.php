@@ -2,39 +2,37 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations;
 
 class Terminal extends Model
 {
-    // Database Table Name
-    protected $table = 'terminals';
+    use HasFactory;
 
-    // Mass Assignable Fields
-    protected $fillable = [
-        'iata_code',
-        'terminal_code',
-    ];
-
-    // Disable default timestamps, as the 'timestamp' column is manually managed
     public $timestamps = false;
-    
-    // --- Relationships ---
 
-    // Parent Airport
-    public function airport()
+    /**
+     * Get the airport this terminal belongs to.
+     */
+    public function airport(): Relations\BelongsTo
     {
         return $this->belongsTo(Airport::class, 'iata_code', 'iata_code');
     }
 
-    // Child Gates
-    public function gates()
+    /**
+     * Get all gates in this terminal.
+     */
+    public function gates(): Relations\HasMany
     {
-        return $this->hasMany(Gate::class, 'terminal_id', 'id');
+        return $this->hasMany(Gate::class, 'terminal_id');
     }
 
-    // Child Baggage Claims
-    public function baggageClaims()
+    /**
+     * Get all baggage claims in this terminal.
+     */
+    public function baggageClaims(): Relations\HasMany
     {
-        return $this->hasMany(BaggageClaim::class, 'terminal_id', 'id');
+        return $this->hasMany(BaggageClaim::class, 'terminal_id');
     }
 }

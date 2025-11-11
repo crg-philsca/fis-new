@@ -2,32 +2,30 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations;
 
 class FlightConnection extends Model
 {
+    use HasFactory;
+
     protected $table = 'flight_connections';
-
-    protected $fillable = [
-        'arrival_flight_id',
-        'departure_flight_id',
-        'minimum_connecting_time',
-    ];
-
-    // Disable default timestamps, as the 'timestamp' column is manually managed
     public $timestamps = false;
 
-    // --- Relationships ---
-
-    // Arrival Flight in the connection pair
-    public function arrivalFlight()
+    /**
+     * Get the arriving flight.
+     */
+    public function arrivalFlight(): Relations\BelongsTo
     {
-        return $this->belongsTo(Flight::class, 'arrival_flight_id', 'id');
+        return $this->belongsTo(Flight::class, 'arrival_flight_id');
     }
 
-    // Departure Flight in the connection pair
-    public function departureFlight()
+    /**
+     * Get the departing flight.
+     */
+    public function departureFlight(): Relations\BelongsTo
     {
-        return $this->belongsTo(Flight::class, 'departure_flight_id', 'id');
+        return $this->belongsTo(Flight::class, 'departure_flight_id');
     }
 }

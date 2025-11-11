@@ -2,38 +2,41 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations;
 
 class FlightArrival extends Model
 {
+    use HasFactory;
+
     protected $table = 'flight_arrivals';
-
-    // Primary Key is the Foreign Key (One-to-One mapping)
-    protected $primaryKey = 'flight_id'; 
+    protected $primaryKey = 'flight_id';
     public $incrementing = false;
-
-    // Disable default timestamps, as the 'timestamp' column is manually managed
     public $timestamps = false;
-    protected $keyType = 'integer';
-
+    
     protected $fillable = [
-        'flight_id',
-        'baggage_claim_id',
-        'actual_arrival_time',
-        'landing_time',
+        'flight_id', 'actual_arrival_time', 'landing_time', 'baggage_claim_id'
     ];
 
-    // --- Relationships ---
+    protected $casts = [
+        'actual_arrival_time' => 'datetime',
+        'landing_time' => 'datetime',
+    ];
 
-    // Parent Flight
-    public function flight()
+    /**
+     * Get the master flight record.
+     */
+    public function flight(): Relations\BelongsTo
     {
-        return $this->belongsTo(Flight::class, 'flight_id', 'id');
+        return $this->belongsTo(Flight::class, 'flight_id');
     }
 
-    // Assigned Baggage Claim Area
-    public function baggageClaim()
+    /**
+     * Get the baggage claim carousel used.
+     */
+    public function baggageClaim(): Relations\BelongsTo
     {
-        return $this->belongsTo(BaggageClaim::class, 'baggage_claim_id', 'id');
+        return $this->belongsTo(BaggageClaim::class, 'baggage_claim_id');
     }
 }

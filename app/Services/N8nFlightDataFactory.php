@@ -6,6 +6,7 @@ use App\Contracts\FlightDataFactory;
 use App\Contracts\FlightReader;
 use App\Contracts\StatusUpdater;
 use App\Contracts\AirportCreator;
+use App\Contracts\FlightSyncer;
 
 // Concrete Factory for data flow originating from N8n/Webhooks.
 class N8nFlightDataFactory implements FlightDataFactory
@@ -26,5 +27,11 @@ class N8nFlightDataFactory implements FlightDataFactory
     {
         // Service to sync Airport data from ARS/N8n
         return new FisDbAirportCreatorService();
+    }
+
+    public function createFlightSyncer(): FlightSyncer
+    {
+        // Service to sync Flight master data
+        return new N8nFlightSyncerService();
     }
 }

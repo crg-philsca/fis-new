@@ -1,0 +1,131 @@
+{
+  "name": "Inbound Flight Sync (External -> FIS)",
+  "nodes": [
+    {
+      "id": "Webhook_Inbound",
+      "name": "Inbound Flight Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [300, 200],
+      "parameters": {
+        "path": "flight-sync",
+        "httpMethod": "POST",
+        "responseMode": "onReceived",
+        "options": {
+          "rawBody": false
+        }
+      }
+    },
+    {
+      "id": "Set_Correlation",
+      "name": "Set Correlation ID",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [540, 200],
+      "parameters": {
+        "functionCode": "// Propagate or create X-Correlation-ID\nconst hdr = $json.headers || {};\nlet cid = hdr['x-correlation-id'] || hdr['X-Correlation-ID'];\nif (!cid) {\n  cid = $uuid();\n}\nreturn [{ json: { correlation_id: cid, body: $json.body || $json } }];"
+      }
+    },
+    {
+      "id": "HTTP_FIS_Api",
+      "name": "POST /api/v1/sync/flight",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [800, 200],
+      "parameters": {
+        "url": "{{ $env.FIS_API_BASE }}/api/v1/sync/flight",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {},
+        "sendBody": true,
+        "bodyParametersJson": "={{ JSON.stringify($json.body || $json) }}",
+        "headerParametersJson": "={\n  \"X-Correlation-ID\": $json.correlation_id\n}"
+      }
+    },
+    {
+      "id": "If_Retry",
+      "name": "If Retriable",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1040, 200],
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json[\"statusCode\"] || $json.statusCode}}",
+              "operation": "notEqual",
+              "value2": 200
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Wait_Backoff",
+      "name": "Wait + Backoff",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1280, 120],
+      "parameters": {
+        "amount": 10,
+        "unit": "seconds"
+      }
+    },
+    {
+      "id": "Exit_Success",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1280, 300],
+      "parameters": {
+        "responseBody": "={ flight_sync: 'accepted', correlation_id: $json.correlation_id }",
+        "responseCode": 200
+      }
+    }
+  ],
+  "connections": {
+    "Inbound Flight Webhook": {
+      "main": [
+        [
+          { "node": "Set Correlation ID", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Set Correlation ID": {
+      "main": [
+        [
+          { "node": "POST /api/v1/sync/flight", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "POST /api/v1/sync/flight": {
+      "main": [
+        [
+          { "node": "If Retriable", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "If Retriable": {
+      "main": [
+        [
+          { "node": "Success Response", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Wait + Backoff", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Wait + Backoff": {
+      "main": [
+        [
+          { "node": "POST /api/v1/sync/flight", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "versionId": "inbound-flight-sync-v1"
+}

@@ -2,33 +2,33 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations;
 
+/**
+ * @property string|null $claim_area
+ */
 class BaggageClaim extends Model
 {
-    // Database Table Name
+    use HasFactory;
+
     protected $table = 'baggage_claims';
-
-    // Mass Assignable Fields
-    protected $fillable = [
-        'terminal_id',
-        'claim_area',
-    ];
-
-    // Disable default timestamps, as the 'timestamp' column is manually managed
     public $timestamps = false;
 
-    // --- Relationships ---
-
-    // Parent Terminal
-    public function terminal()
+    /**
+     * Get the terminal this baggage claim belongs to.
+     */
+    public function terminal(): Relations\BelongsTo
     {
-        return $this->belongsTo(Terminal::class, 'terminal_id', 'id');
+        return $this->belongsTo(Terminal::class, 'terminal_id');
     }
 
-    // Assigned Flight Arrivals
-    public function arrivals()
+    /**
+     * Get all flight arrivals assigned to this claim area.
+     */
+    public function arrivals(): Relations\HasMany
     {
-        return $this->hasMany(FlightArrival::class, 'baggage_claim_id', 'id');
+        return $this->hasMany(FlightArrival::class, 'baggage_claim_id');
     }
 }

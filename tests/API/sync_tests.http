@@ -1,0 +1,22 @@
+### Test 1: Sync New Airport (LHR)
+
+POST http://fis-new.test/api/v1/integration/airport-sync HTTP/1.1
+Content-Type: application/json
+
+{
+    "iata_code": "LHR",
+    "airport_name": "London Heathrow Airport",
+    "city": "London",
+    "country": "UK",
+    "timezone": "Europe/London"
+}
+
+### Test 2: Update Flight Status (ATC/N8n Integration)
+POST http://fis-new.test/api/v1/integration/status-update
+Content-Type: application/json
+
+{
+"flight_id": 1,
+"status_code": "DEP",
+"timestamp": "2025-11-10T12:00:00Z"
+}

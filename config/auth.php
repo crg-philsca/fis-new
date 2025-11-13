@@ -40,6 +40,14 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // ---------------------------------------------------------
+        // REQUIRED ADDITION FOR N8N/API INTEGRATION (SANCTUM GUARD)
+        // ---------------------------------------------------------
+        'sanctum' => [
+            'driver' => 'sanctum',
+            'provider' => 'users',
+        ],
     ],
 
     /*

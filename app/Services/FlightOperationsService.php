@@ -26,6 +26,7 @@ class FlightOperationsService
      */
     public function assignGate(Flight $flight, Gate $newGate): Flight
     {
+        // Accessing gate_id through the departure fact table is correct.
         $oldGateId = $flight->departure->gate_id ?? null;
 
         if ($oldGateId === $newGate->id) {
@@ -35,7 +36,7 @@ class FlightOperationsService
         // Use a transaction for 3NF integrity
         DB::transaction(function () use ($flight, $newGate, $oldGateId) {
             
-            // 1. Update the local database
+            // 1. Update the local database (the departure fact table holds the assigned gate)
             $flight->departure()->updateOrCreate(
                 ['flight_id' => $flight->id],
                 ['gate_id' => $newGate->id]
@@ -68,6 +69,7 @@ class FlightOperationsService
      */
     public function assignBaggageClaim(Flight $flight, BaggageClaim $newClaim): Flight
     {
+        // Accessing baggage_claim_id through the arrival fact table is correct.
         $oldClaimId = $flight->arrival->baggage_claim_id ?? null;
 
         if ($oldClaimId === $newClaim->id) {
@@ -75,7 +77,7 @@ class FlightOperationsService
         }
 
         DB::transaction(function () use ($flight, $newClaim, $oldClaimId) {
-            // 1. Update local DB
+            // 1. Update local DB (the arrival fact table holds the assigned claim area)
             $flight->arrival()->updateOrCreate(
                 ['flight_id' => $flight->id],
                 ['baggage_claim_id' => $newClaim->id]

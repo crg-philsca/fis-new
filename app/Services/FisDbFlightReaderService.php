@@ -11,12 +11,13 @@ class FisDbFlightReaderService implements FlightReader
     public function getFlightDetails(string $identifier)
     {
         // Eager-load relationships using the actual relation names from App\Models\Flight
+        // Note: This relies on the FlightDeparture/FlightArrival models having the gate/claim relationships.
         $query = Flight::with([
             'origin',
             'destination',
             'status',
-            'departure.gate.terminal',
-            'arrival.baggageClaim.terminal',
+            'departure.gate.terminal', // Chains: Flight->Departure->Gate->Terminal
+            'arrival.baggageClaim.terminal', // Chains: Flight->Arrival->BaggageClaim->Terminal
         ]);
         
         // Find by ID or flight_number

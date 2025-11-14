@@ -162,16 +162,20 @@ class Flight extends Model
 
     /**
      * Gets the Terminal model through the Gate model (N+1 fix for FIDS).
+     *
+     * Relationship path: Flight -> Gate -> Terminal
+     * - Flight.gate_id links to Gate.id
+     * - Gate.terminal_id links to Terminal.id
      */
     public function terminal(): Relations\HasOneThrough
     {
         return $this->hasOneThrough(
-            Terminal::class,
-            Gate::class,
-            'id',           // Foreign key on Gate table (PK)
-            'id',           // Foreign key on Terminal table (PK)
-            'gate_id',      // Local key on Flight table
-            'terminal_id'   // Local key on Gate table
+            Terminal::class,    // Final model to access
+            Gate::class,        // Intermediate model
+            'terminal_id',      // Foreign key on the intermediate table (gates) referencing the final table (terminals)
+            'id',               // Primary key on the final table (terminals) - default
+            'gate_id',          // Local key on the starting table (flights) referencing the intermediate table (gates)
+            'id'                // Primary key on the intermediate table (gates) - default
         );
     }
 }

@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Contracts\StatusUpdater;
 use App\Models\Flight;
-use App\Models\FlightEvent; // <-- CRITICAL FIX: Use the correct model
+use App\Models\FlightEvent;
 use App\Models\FlightStatus;
 use App\Models\BaggageClaim;
 use App\Models\Gate;
@@ -60,7 +60,7 @@ class N8nStatusUpdaterService implements StatusUpdater
                 $flight->save();
 
                 // 2. Log the change in the *correct* history table (The Audit Trail)
-                FlightEvent::create([ // <-- CRITICAL FIX: Was FlightTimesHistory
+                FlightEvent::create([
                     'flight_id' => $flightId,
                     'event_type' => 'STATUS_CHANGE', 
                     'old_fk_id' => $oldStatusId,
@@ -157,6 +157,7 @@ class N8nStatusUpdaterService implements StatusUpdater
         $payload = [
             'flight_id' => $flight->id,
             'flight_number' => $flight->flight_number,
+            // Uses null-safe operator (?->) for nullable DB fields
             'actual_departure_time' => $flight->departure->actual_departure_time->toIso8601String(),
             'runway_time' => $flight->departure->runway_time?->toIso8601String(),
             'status' => 'DEP',
@@ -179,6 +180,7 @@ class N8nStatusUpdaterService implements StatusUpdater
         $payload = [
             'flight_id' => $flight->id,
             'flight_number' => $flight->flight_number,
+            // Uses null-safe operator (?->) for nullable DB fields
             'actual_arrival_time' => $flight->arrival->actual_arrival_time->toIso8601String(),
             'landing_time' => $flight->arrival->landing_time?->toIso8601String(),
             'status' => 'ARR',

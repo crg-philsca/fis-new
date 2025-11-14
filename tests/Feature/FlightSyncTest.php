@@ -7,6 +7,10 @@ use App\Contracts\FlightSyncer;
 use App\Contracts\StatusUpdater;
 use App\Models\Flight;
 use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
+
+// Note: This file relies on inheriting the HTTP methods (like $this->postJson()) 
+// from the Tests\TestCase base class, as configured in tests/Pest.php.
 
 it('syncFlight returns 200 and flight_id on success', function () {
     // Arrange: bind a fake factory that returns a fake syncer

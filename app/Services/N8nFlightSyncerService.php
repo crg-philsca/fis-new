@@ -35,6 +35,7 @@ class N8nFlightSyncerService implements FlightSyncer
     {
         $flightId           = $payload['flight_id'] ?? null;
         $flightNumber       = $payload['flight_number'] ?? null;
+        // scheduledDeparture is parsed to a Carbon object or remains null if empty
         $scheduledDeparture = !empty($payload['scheduled_departure_time']) ? Carbon::parse($payload['scheduled_departure_time']) : null;
 
         if (!$flightId && (!$flightNumber || !$scheduledDeparture)) {
@@ -49,8 +50,9 @@ class N8nFlightSyncerService implements FlightSyncer
                 $flight = Flight::find($flightId);
             }
             if (!$flight && $flightNumber && $scheduledDeparture) {
+                // Must convert Carbon to string for WHERE clause comparison
                 $flight = Flight::where('flight_number', $flightNumber)
-                                 ->where('scheduled_departure_time', $scheduledDeparture->toDateTimeString())
+                                 ->where('scheduled_departure_time', $scheduledDeparture->toDateTimeString()) 
                                  ->first();
             }
             
@@ -66,7 +68,9 @@ class N8nFlightSyncerService implements FlightSyncer
                 
                 // Set mandatory fields and defaults for NEW records
                 $flight->flight_number          = $flightNumber;
-                $flight->scheduled_departure_time = $scheduledDeparture->toDateTimeString();
+                
+                // *** FIX APPLIED: Assign Carbon object directly to satisfy Eloquent/Static Analysis ***
+                $flight->scheduled_departure_time = $scheduledDeparture; 
                 
                 // CRITICAL: Set initial default foreign key values for NEW records
                 $defaultStatus = FlightStatus::where('status_code', 'SCH')->first();
@@ -83,9 +87,12 @@ class N8nFlightSyncerService implements FlightSyncer
                 'origin_code', 'destination_code', 'airline_code', 'aircraft_icao_code', 'scheduled_arrival_time'
             ] as $attr) {
                 if (array_key_exists($attr, $payload)) {
-                    $flight->{$attr} = in_array($attr, ['scheduled_departure_time', 'scheduled_arrival_time']) && !empty($payload[$attr])
-                        ? Carbon::parse($payload[$attr])->toDateTimeString()
-                        : $payload[$attr];
+                    // Check if the attribute is a datetime field and assign the Carbon object if not empty
+                    if (in_array($attr, ['scheduled_departure_time', 'scheduled_arrival_time']) && !empty($payload[$attr])) {
+                        $flight->{$attr} = Carbon::parse($payload[$attr]);
+                    } else {
+                        $flight->{$attr} = $payload[$attr];
+                    }
                 }
             }
 
@@ -95,11 +102,11 @@ class N8nFlightSyncerService implements FlightSyncer
                 if ($status) {
                     $flight->status_id = $status->id;
                 } else {
-                    Log::warning('Status code not found during flight sync.', ['status_code' => $payload['status_code']]);
+                    Log::warning('Status code not found during flight sync. Defaulting to existing status.', ['status_code' => $payload['status_code']]);
                 }
             }
             
-            // 4. Resolve Gate ID - ***CORRECTED LOGIC***: ONLY update if 'gate_code' is present in the payload.
+            // 4. Resolve Gate ID - ONLY update if 'gate_code' is present in the payload.
             if (array_key_exists('gate_code', $payload)) {
                 $gateCode = $payload['gate_code'];
                 $resolvedGateId = self::UNASSIGNED_GATE_ID; 
@@ -114,10 +121,9 @@ class N8nFlightSyncerService implements FlightSyncer
                 }
                 $flight->gate_id = $resolvedGateId;
             }
-            // If 'gate_code' is missing from payload, the existing $flight->gate_id is preserved.
 
 
-            // 5. Resolve Baggage Claim ID - ***CORRECTED LOGIC***: ONLY update if 'claim_area' is present in the payload.
+            // 5. Resolve Baggage Claim ID - ONLY update if 'claim_area' is present in the payload.
             if (array_key_exists('claim_area', $payload)) {
                 $claimArea = $payload['claim_area'];
                 $resolvedClaimId = self::UNASSIGNED_CLAIM_ID;
@@ -132,7 +138,6 @@ class N8nFlightSyncerService implements FlightSyncer
                 }
                 $flight->baggage_claim_id = $resolvedClaimId;
             }
-            // If 'claim_area' is missing from payload, the existing $flight->baggage_claim_id is preserved.
 
             // 6. Save the Flight Record
             $isSaved = $flight->save();
@@ -143,25 +148,18 @@ class N8nFlightSyncerService implements FlightSyncer
             }
 
             // 7. RELATED RECORDS INITIALIZATION (Departure/Arrival)
-            // ***CRITICAL FIX***: Removed logic that incorrectly set actual_time to scheduled_time. 
-            // This requires the database columns to be NULLable (see section 3).
-            
             // FlightDeparture: Use firstOrCreate to link to the new flight and set the gate ID.
+            // Actual time fields will default to NULL by the database schema, which is correct.
             FlightDeparture::firstOrCreate(
                 ['flight_id' => $flight->id],
-                [
-                    // actual_departure_time should be NULL, relying on DB schema fix.
-                    'gate_id' => $flight->gate_id 
-                ]
+                ['gate_id' => $flight->gate_id]
             );
 
             // FlightArrival: Use firstOrCreate to link to the new flight and set the baggage claim ID.
+            // Actual time fields will default to NULL by the database schema, which is correct.
             FlightArrival::firstOrCreate(
                 ['flight_id' => $flight->id],
-                [
-                    // actual_arrival_time should be NULL, relying on DB schema fix.
-                    'baggage_claim_id' => $flight->baggage_claim_id
-                ]
+                ['baggage_claim_id' => $flight->baggage_claim_id]
             );
 
             return $flight->load('status');

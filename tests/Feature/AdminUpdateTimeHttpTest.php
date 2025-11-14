@@ -6,18 +6,24 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Auth\Middleware\Authenticate;
 use App\Models\User;
+use Illuminate\Foundation\Testing\TestCase; // Ensure TestCase methods are available
 
+// Use a test function wrapper for the Pest structure
 it('POST /api/v1/admin/flights/{flight}/time updates time with auth and middleware', function () {
     // Minimal schema just for this HTTP test
     Schema::create('flights', function ($table) {
-        $table->integer('id')->primary();
+        $table->id(); // Using id() for PK (long form for clarity, matches bigint)
+        $table->string('flight_number')->nullable();
+        $table->string('airline_code')->nullable();
+        $table->string('origin_code')->nullable();
+        $table->string('destination_code')->nullable();
         $table->timestamp('scheduled_departure_time')->nullable();
         $table->timestamp('scheduled_arrival_time')->nullable();
         $table->timestamps();
     });
     Schema::create('flight_events', function ($table) {
         $table->increments('id');
-        $table->integer('flight_id');
+        $table->foreignId('flight_id')->constrained('flights'); // Use foreignId to link properly
         $table->string('event_type');
         $table->string('old_fk_id')->nullable();
         $table->string('new_fk_id')->nullable();
@@ -25,10 +31,19 @@ it('POST /api/v1/admin/flights/{flight}/time updates time with auth and middlewa
         $table->string('new_value')->nullable();
         $table->timestamps();
     });
+    // Create users/permissions for auth checks
+    Schema::create('users', function ($table) {
+        $table->id();
+        $table->string('name');
+        $table->string('email')->unique();
+        $table->string('password');
+    });
 
     Flight::unguard();
-    Flight::create([
+    // Create the flight using the actual model for consistency
+    $flight = Flight::create([ 
         'id' => 777,
+        'flight_number' => 'AB101',
         'scheduled_departure_time' => Carbon::parse('2025-11-12 08:00:00'),
     ]);
 
@@ -37,7 +52,7 @@ it('POST /api/v1/admin/flights/{flight}/time updates time with auth and middlewa
     $fakeUpdater = new class($calls) implements StatusUpdater {
         public array $timeCalls = [];
         public function __construct(&$callsRef) { $this->timeCalls =& $callsRef; }
-    public function updateStatus(array $payload): Flight { return new Flight(); }
+        public function updateStatus(array $payload): Flight { return new Flight(); }
         public function updateGate(Flight $flight, \App\Models\Gate $newGate): bool { return true; }
         public function updateBaggageClaim(Flight $flight, \App\Models\BaggageClaim $newClaim): bool { return true; }
         public function updateTime(Flight $flight, string $timeType, Carbon $newTime): bool {
@@ -50,10 +65,12 @@ it('POST /api/v1/admin/flights/{flight}/time updates time with auth and middlewa
     };
     app()->bind(StatusUpdater::class, fn() => $fakeUpdater);
 
-    // Authenticate via Sanctum (no DB tokens required for tests)
-    $user = new User();
-    $this->be($user); // simple auth context
-    // In case Sanctum guard isn't configured in this test env, bypass just the auth middleware
+    // Arrange: User and Authentication
+    $user = User::factory()->create();
+    $this->be($user); // Authenticate the user
+
+    // In this specific HTTP test, we bypass the Authenticate middleware 
+    // to isolate the function logic, assuming the user is already authenticated above.
     $this->withoutMiddleware(Authenticate::class);
 
     $resp = $this->postJson('/api/v1/admin/flights/777/time', [
@@ -63,12 +80,13 @@ it('POST /api/v1/admin/flights/{flight}/time updates time with auth and middlewa
 
     $resp->assertStatus(200)->assertJsonPath('message', 'Flight time updated successfully.');
 
-    // Outbound stub was called
+    // Assert: Outbound stub was called
     expect($fakeUpdater->timeCalls)->toHaveCount(1);
     expect($fakeUpdater->timeCalls[0]['timeType'])->toBe('scheduled_departure');
     expect($fakeUpdater->timeCalls[0]['newTime']->toDateTimeString())->toBe('2025-11-12 09:15:00');
 
-    // DB updated
+    // Assert: DB updated
     $fresh = Flight::find(777);
     expect(optional($fresh->scheduled_departure_time)->toDateTimeString())->toBe('2025-11-12 09:15:00');
-});
+})
+->group('api'); // Use grouping for organization

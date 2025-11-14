@@ -17,9 +17,10 @@ class PreventEmbedding
     {
         $response = $next($request);
         
+        // Apply security headers to the response object
         $response->headers->set('X-Frame-Options', 'DENY');
         $response->headers->set('Content-Security-Policy', "frame-ancestors 'none';");
 
-        return $next($request);
+        return $response;
     }
 }

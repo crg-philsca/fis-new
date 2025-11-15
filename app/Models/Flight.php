@@ -157,6 +157,22 @@ class Flight extends Model
             'arrival_flight_id'    // Foreign key on pivot for the related model
         )->withPivot('minimum_connecting_time');
     }
+
+    /**
+     * Alias for connections() - flights this arrives into (inbound connections)
+     */
+    public function inboundConnections(): Relations\BelongsToMany
+    {
+        return $this->connections();
+    }
+
+    /**
+     * Alias for connectingFrom() - flights this departs to (outbound connections)
+     */
+    public function outboundConnections(): Relations\BelongsToMany
+    {
+        return $this->connectingFrom();
+    }
     
     // --- CONVENIENCE RELATIONSHIPS (for efficient querying) ---
 

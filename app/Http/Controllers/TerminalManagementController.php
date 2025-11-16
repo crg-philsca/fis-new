@@ -21,7 +21,7 @@ class TerminalManagementController extends Controller
                 $query->withCount('departures');
             },
             'baggageClaims'
-        ])->get();
+        ])->paginate(10)->withQueryString();
 
         $airports = Airport::all(['iata_code', 'airport_name']);
 

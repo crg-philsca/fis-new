@@ -1,0 +1,261 @@
+{
+  "name": "Outbound Flight Update (FIS -> External) - Generic",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fis-outbound",
+        "options": {
+          "rawBody": false
+        }
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "FIS Outbound Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        280,
+        180
+      ],
+      "webhookId": "fis-outbound-webhook-id"
+    },
+    {
+      "parameters": {
+        "functionCode": "const hdr = $json.headers || {};\nlet cid = hdr['x-correlation-id'] || hdr['X-Correlation-ID'];\nif (!cid) cid = $uuid();\n\n// Initialize retry count\nconst retryCount = ($json.retry_count || 0) + 1;\n\n// Pass original payload with correlation and retry data\nreturn [{ json: { \n  correlation_id: cid, \n  retry_count: retryCount, \n  payload: $json.body || $json \n}}];"
+      },
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "Set Correlation ID & Retry Count",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        520,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const p = $json.payload;\nconst eventType = p.event_type;\n\n// Base payload for all event types\nconst basePayload = {\n  event_type: eventType,\n  flight_id: p.flight_id,\n  flight_number: p.flight_number,\n  correlation_id: $json.correlation_id,\n  retry_count: $json.retry_count,\n  timestamp: p.timestamp || new Date().toISOString()\n};\n\n// Add event-specific data\nlet eventData = {};\n\nswitch(eventType) {\n  case 'time_update':\n    eventData = {\n      time_type: p.time_type, // 'departure' or 'arrival'\n      old_time: p.old_time,\n      new_time: p.new_time,\n      delay_minutes: p.delay_minutes,\n      reason: p.reason\n    };\n    break;\n    \n  case 'status_change':\n    eventData = {\n      old_status: p.old_status,\n      new_status: p.new_status,\n      status_code: p.status_code,\n      reason: p.reason\n    };\n    break;\n    \n  case 'gate_change':\n    eventData = {\n      old_gate: p.old_gate,\n      new_gate: p.new_gate,\n      terminal: p.terminal,\n      reason: p.reason\n    };\n    break;\n    \n  case 'baggage_change':\n    eventData = {\n      old_baggage_claim: p.old_baggage_claim,\n      new_baggage_claim: p.new_baggage_claim,\n      terminal: p.terminal\n    };\n    break;\n    \n  case 'cancellation':\n    eventData = {\n      cancellation_reason: p.cancellation_reason,\n      cancelled_at: p.cancelled_at,\n      affected_passengers: p.affected_passengers,\n      rebooking_options: p.rebooking_options || []\n    };\n    break;\n    \n  case 'boarding_started':\n    eventData = {\n      gate: p.gate,\n      terminal: p.terminal,\n      boarding_time: p.boarding_time\n    };\n    break;\n    \n  default:\n    // Generic update - pass all data\n    eventData = p.data || {};\n}\n\nreturn [{ json: { ...basePayload, data: eventData } }];"
+      },
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "name": "Map Event Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        760,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "headerAuth",
+        "url": "={{ $env.EXTERNAL_SYSTEM_URL }}/api/flight-update",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {},
+        "sendBody": true,
+        "bodyParametersJson": "={{ JSON.stringify($json) }}",
+        "headerParametersJson": "={\n  \"X-Correlation-ID\": $json.correlation_id,\n  \"X-Event-Type\": $json.event_type\n}"
+      },
+      "id": "d4e5f6a7-b8c9-0123-def1-234567890123",
+      "name": "POST to External System",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        180
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "external-system-auth",
+          "name": "External System Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json[\"statusCode\"] || $json.statusCode}}",
+              "operation": "less",
+              "value2": 300
+            }
+          ]
+        }
+      },
+      "id": "e5f6a7b8-c9d0-1234-ef12-345678901234",
+      "name": "Check HTTP Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1240,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json.retry_count}}",
+              "operation": "less",
+              "value2": 4
+            }
+          ]
+        }
+      },
+      "id": "f6a7b8c9-d0e1-2345-f123-456789012345",
+      "name": "Retry Logic",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1480,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 10,
+        "unit": "seconds"
+      },
+      "id": "a7b8c9d0-e1f2-3456-1234-567890123456",
+      "name": "Wait + Backoff",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        1720,
+        260
+      ],
+      "webhookId": "wait-backoff-webhook-id"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "b8c9d0e1-f2a3-4567-2345-678901234567",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1480,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "c9d0e1f2-a3b4-5678-3456-789012345678",
+      "name": "Failure Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1720,
+        420
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "FIS Outbound Webhook": {
+      "main": [
+        [
+          {
+            "node": "Set Correlation ID & Retry Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Correlation ID & Retry Count": {
+      "main": [
+        [
+          {
+            "node": "Map Event Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map Event Data": {
+      "main": [
+        [
+          {
+            "node": "POST to External System",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST to External System": {
+      "main": [
+        [
+          {
+            "node": "Check HTTP Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check HTTP Success": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Retry Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retry Logic": {
+      "main": [
+        [
+          {
+            "node": "Wait + Backoff",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Failure Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait + Backoff": {
+      "main": [
+        [
+          {
+            "node": "Set Correlation ID & Retry Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "outbound-flight-update-v1-generic",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

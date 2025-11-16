@@ -40,13 +40,23 @@ interface Gate {
     is_occupied: boolean;
 }
 
-interface Props {
-    gates: Gate[];
+interface PaginatedGates {
+    data: Gate[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
 }
 
-export default function GateManagement({ gates = [] }: Props) {
+interface Props {
+    gates: PaginatedGates;
+}
+
+export default function GateManagement({ gates }: Props) {
     const [selectedGate, setSelectedGate] = useState<Gate | null>(null);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    
+    const gatesList = gates.data || [];
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
@@ -85,7 +95,10 @@ export default function GateManagement({ gates = [] }: Props) {
                             Manage airport gates and flight assignments
                         </p>
                     </div>
-                    <Button className="gap-2">
+                    <Button 
+                        className="gap-2"
+                        onClick={() => alert('Gate creation form coming soon')}
+                    >
                         <Plus className="w-4 h-4" />
                         Add New Gate
                     </Button>
@@ -99,7 +112,7 @@ export default function GateManagement({ gates = [] }: Props) {
                             <CardTitle className="text-sm font-medium">Total Gates</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{gates.length}</div>
+                            <div className="text-2xl font-bold">{gates.total}</div>
                         </CardContent>
                     </Card>
                     <Card>
@@ -108,7 +121,7 @@ export default function GateManagement({ gates = [] }: Props) {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold text-green-500">
-                                {gates.filter(g => g.is_occupied).length}
+                                {gatesList.filter((g: Gate) => g.is_occupied).length}
                             </div>
                         </CardContent>
                     </Card>
@@ -118,7 +131,7 @@ export default function GateManagement({ gates = [] }: Props) {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold text-blue-500">
-                                {gates.filter(g => !g.is_occupied).length}
+                                {gatesList.filter((g: Gate) => !g.is_occupied).length}
                             </div>
                         </CardContent>
                     </Card>
@@ -143,14 +156,14 @@ export default function GateManagement({ gates = [] }: Props) {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {gates.length === 0 ? (
+                                    {gatesList.length === 0 ? (
                                         <TableRow>
                                             <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                                                 No gates found. Add your first gate to get started.
                                             </TableCell>
                                         </TableRow>
                                     ) : (
-                                        gates.map((gate) => (
+                                        gatesList.map((gate) => (
                                             <TableRow key={gate.id}>
                                                 <TableCell className="font-medium">
                                                     <div className="flex items-center gap-2">
@@ -204,10 +217,14 @@ export default function GateManagement({ gates = [] }: Props) {
                                                     )}
                                                 </TableCell>
                                                 <TableCell className="text-right">
-                                                    <div className="flex items-center justify-end gap-1">
-                                                        <Button variant="ghost" size="icon">
-                                                            <Pencil className="w-4 h-4" />
-                                                        </Button>
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon"
+                                                        onClick={() => alert(`Edit gate ${gate.gate_code} - Form coming soon`)}
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </Button>
                                                         <Button 
                                                             variant="ghost" 
                                                             size="icon"
@@ -222,6 +239,46 @@ export default function GateManagement({ gates = [] }: Props) {
                                     )}
                                 </TableBody>
                             </Table>
+                            
+                            {/* Pagination */}
+                            {gatesList.length > 0 && (
+                                <div className="flex items-center justify-between pt-4">
+                                    <div className="text-sm text-muted-foreground">
+                                        Showing {((gates.current_page - 1) * gates.per_page) + 1} to {Math.min(gates.current_page * gates.per_page, gates.total)} of {gates.total} entries
+                                    </div>
+                                    <div className="flex gap-1">
+                                        {gates.current_page > 1 && (
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm"
+                                                onClick={() => router.get(`/management/gates?page=${gates.current_page - 1}`)}
+                                            >
+                                                ← Previous
+                                            </Button>
+                                        )}
+                                        {Array.from({ length: Math.min(5, gates.last_page) }, (_, i) => i + 1).map(page => (
+                                            <Button 
+                                                key={page}
+                                                variant={page === gates.current_page ? 'default' : 'outline'}
+                                                size="sm"
+                                                className="w-8"
+                                                onClick={() => router.get(`/management/gates?page=${page}`)}
+                                            >
+                                                {page}
+                                            </Button>
+                                        ))}
+                                        {gates.current_page < gates.last_page && (
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm"
+                                                onClick={() => router.get(`/management/gates?page=${gates.current_page + 1}`)}
+                                            >
+                                                Next →
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>

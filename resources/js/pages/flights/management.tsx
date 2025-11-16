@@ -130,7 +130,6 @@ interface Props {
 
 export default function FlightManagement({ flights, filters, options }: Props) {
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
-    const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [showEditDialog, setShowEditDialog] = useState(false);
     const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -201,13 +200,9 @@ export default function FlightManagement({ flights, filters, options }: Props) {
                             Flight Management
                         </h1>
                         <p className="text-muted-foreground mt-1">
-                            Create, view, update, and delete flight records
+                            View, update, and manage flight records received from PMS
                         </p>
                     </div>
-                    <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
-                        <Plus className="w-4 h-4" />
-                        Add New Flight
-                    </Button>
                 </div>
 
                 <Separator />
@@ -251,7 +246,7 @@ export default function FlightManagement({ flights, filters, options }: Props) {
                                     <SelectContent>
                                         <SelectItem value="all">All Statuses</SelectItem>
                                         {options.statuses.map((status) => (
-                                            <SelectItem key={status.id} value={status.status_code}>
+                                            <SelectItem key={status.id} value={status.id.toString()}>
                                                 {status.status_name}
                                             </SelectItem>
                                         ))}
@@ -434,28 +429,54 @@ export default function FlightManagement({ flights, filters, options }: Props) {
                         </div>
 
                         {/* Pagination */}
-                        {flights.last_page > 1 && (
+                        {flights.data.length > 0 && (
                             <div className="flex items-center justify-between px-6 py-4 border-t">
                                 <div className="text-sm text-muted-foreground">
-                                    Page {flights.current_page} of {flights.last_page}
+                                    Showing {((flights.current_page - 1) * flights.per_page) + 1} to {Math.min(flights.current_page * flights.per_page, flights.total)} of {flights.total} entries
                                 </div>
-                                <div className="flex gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={flights.current_page === 1}
-                                        onClick={() => router.get(`/flights/management?page=${flights.current_page - 1}`)}
-                                    >
-                                        Previous
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={flights.current_page === flights.last_page}
-                                        onClick={() => router.get(`/flights/management?page=${flights.current_page + 1}`)}
-                                    >
-                                        Next
-                                    </Button>
+                                <div className="flex gap-1">
+                                    {flights.current_page > 1 && (
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={() => router.get(`/flights/management`, { ...filters, page: flights.current_page - 1 })}
+                                        >
+                                            ← Previous
+                                        </Button>
+                                    )}
+                                    {Array.from({ length: Math.min(5, flights.last_page) }, (_, i) => {
+                                        let page = i + 1;
+                                        // Show pages around current page
+                                        if (flights.last_page > 5) {
+                                            if (flights.current_page <= 3) {
+                                                page = i + 1;
+                                            } else if (flights.current_page >= flights.last_page - 2) {
+                                                page = flights.last_page - 4 + i;
+                                            } else {
+                                                page = flights.current_page - 2 + i;
+                                            }
+                                        }
+                                        return page;
+                                    }).map(page => (
+                                        <Button 
+                                            key={page}
+                                            variant={page === flights.current_page ? 'default' : 'outline'}
+                                            size="sm"
+                                            className="w-8"
+                                            onClick={() => router.get(`/flights/management`, { ...filters, page })}
+                                        >
+                                            {page}
+                                        </Button>
+                                    ))}
+                                    {flights.current_page < flights.last_page && (
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={() => router.get(`/flights/management`, { ...filters, page: flights.current_page + 1 })}
+                                        >
+                                            Next →
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                         )}

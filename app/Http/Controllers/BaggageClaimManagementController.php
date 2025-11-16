@@ -17,7 +17,7 @@ class BaggageClaimManagementController extends Controller
     {
         $baggageClaims = BaggageClaim::with([
             'terminal.airport'
-        ])->get()->map(function ($claim) {
+        ])->paginate(10)->through(function ($claim) {
             // Get current arrivals for this baggage claim
             $currentArrivals = $claim->arrivals()
                 ->whereHas('flight', function ($q) {
@@ -54,7 +54,7 @@ class BaggageClaimManagementController extends Controller
         $terminals = Terminal::with('airport')->get();
 
         return Inertia::render('management/baggage-claims', [
-            'baggageClaims' => $baggageClaims,
+            'baggageClaims' => $baggageClaims->withQueryString(),
             'terminals' => $terminals,
         ]);
     }

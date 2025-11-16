@@ -12,14 +12,34 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * FlightStatusUpdateController
+ * 
+ * FIS Core Function: Quick status updates and real-time flight information distribution
+ * 
+ * Purpose:
+ * - Provide airport staff with quick interface to update flight status, gates, and baggage claims
+ * - Process status changes and distribute to connected systems
+ * - Log all changes for audit and compliance
+ * 
+ * Integration Points:
+ * - When status changes: Notify PMS, BHS, and passengers
+ * - When gate changes: Update BHS baggage routing, notify passengers
+ * - When delayed/cancelled: Notify all systems and trigger appropriate actions
+ * 
+ * This is a core FIS responsibility: Acting as the single source of truth for flight status.
+ */
 class FlightStatusUpdateController extends Controller
 {
     /**
      * Display the quick status update interface.
+     * 
+     * Shows all flights for quick operational updates.
+     * Used by: Airport operations staff, ground handlers
      */
     public function index(Request $request): Response
     {
-        // Get flights scheduled for today and tomorrow
+        // Get all flights
         $flights = Flight::with([
             'status',
             'airline',
@@ -28,11 +48,7 @@ class FlightStatusUpdateController extends Controller
             'gate.terminal',
             'baggageClaim'
         ])
-            ->whereBetween('scheduled_departure_time', [
-                now()->startOfDay(),
-                now()->addDay()->endOfDay()
-            ])
-            ->orderBy('scheduled_departure_time', 'asc')
+            ->orderBy('scheduled_departure_time', 'desc')
             ->get()
             ->map(function ($flight) {
                 return [
@@ -59,7 +75,13 @@ class FlightStatusUpdateController extends Controller
             });
 
         // Get available options
-        $statuses = FlightStatus::all(['id', 'status_code', 'status_name']);
+        $statuses = FlightStatus::all(['id', 'status_code', 'status_name'])->map(function ($status) {
+            return [
+                'id' => $status->id,
+                'code' => $status->status_code,
+                'name' => $status->status_name,
+            ];
+        });
         $gates = Gate::with('terminal')->get()->map(function ($gate) {
             return [
                 'id' => $gate->id,

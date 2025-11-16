@@ -28,13 +28,23 @@ interface Terminal {
     airport: Airport;
 }
 
-interface Props {
-    terminals: Terminal[];
+interface PaginatedTerminals {
+    data: Terminal[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
 }
 
-export default function TerminalManagement({ terminals = [] }: Props) {
+interface Props {
+    terminals: PaginatedTerminals;
+}
+
+export default function TerminalManagement({ terminals }: Props) {
     const [selectedTerminal, setSelectedTerminal] = useState<Terminal | null>(null);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    
+    const terminalsList = terminals.data || [];
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
@@ -73,7 +83,10 @@ export default function TerminalManagement({ terminals = [] }: Props) {
                             Manage airport terminals
                         </p>
                     </div>
-                    <Button className="gap-2">
+                    <Button 
+                        className="gap-2"
+                        onClick={() => alert('Terminal creation form coming soon')}
+                    >
                         <Plus className="w-4 h-4" />
                         Add Terminal
                     </Button>
@@ -85,7 +98,7 @@ export default function TerminalManagement({ terminals = [] }: Props) {
                     <CardHeader>
                         <CardTitle>All Terminals</CardTitle>
                     </CardHeader>
-                    <CardContent className="p-0">
+                    <CardContent>
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -95,14 +108,14 @@ export default function TerminalManagement({ terminals = [] }: Props) {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {terminals.length === 0 ? (
+                                {terminalsList.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
                                             No terminals found.
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    terminals.map((terminal) => (
+                                    terminalsList.map((terminal) => (
                                         <TableRow key={terminal.id}>
                                             <TableCell className="font-medium">
                                                 {terminal.terminal_code}
@@ -117,7 +130,11 @@ export default function TerminalManagement({ terminals = [] }: Props) {
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex items-center justify-end gap-1">
-                                                    <Button variant="ghost" size="icon">
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon"
+                                                        onClick={() => alert(`Edit terminal ${terminal.terminal_code} - Form coming soon`)}
+                                                    >
                                                         <Pencil className="w-4 h-4" />
                                                     </Button>
                                                     <Button 
@@ -134,6 +151,46 @@ export default function TerminalManagement({ terminals = [] }: Props) {
                                 )}
                             </TableBody>
                         </Table>
+                        
+                        {/* Pagination */}
+                        {terminalsList.length > 0 && (
+                            <div className="flex items-center justify-between pt-4">
+                                <div className="text-sm text-muted-foreground">
+                                    Showing {((terminals.current_page - 1) * terminals.per_page) + 1} to {Math.min(terminals.current_page * terminals.per_page, terminals.total)} of {terminals.total} entries
+                                </div>
+                                <div className="flex gap-1">
+                                    {terminals.current_page > 1 && (
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={() => router.get(`/management/terminals?page=${terminals.current_page - 1}`)}
+                                        >
+                                            ← Previous
+                                        </Button>
+                                    )}
+                                    {Array.from({ length: Math.min(5, terminals.last_page) }, (_, i) => i + 1).map(page => (
+                                        <Button 
+                                            key={page}
+                                            variant={page === terminals.current_page ? 'default' : 'outline'}
+                                            size="sm"
+                                            className="w-8"
+                                            onClick={() => router.get(`/management/terminals?page=${page}`)}
+                                        >
+                                            {page}
+                                        </Button>
+                                    ))}
+                                    {terminals.current_page < terminals.last_page && (
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={() => router.get(`/management/terminals?page=${terminals.current_page + 1}`)}
+                                        >
+                                            Next →
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 

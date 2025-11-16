@@ -79,7 +79,7 @@ class FlightScheduleController extends Controller
         ]);
 
 
-        $flights = $query->paginate(20)->through(function ($flight) use ($type) {
+        $flights = $query->paginate(10)->through(function ($flight) use ($type) {
             // Include a helper property for the frontend (React) to determine display logic
             $flight->type = ($flight->destination_code === self::LOCAL_IATA_CODE) ? 'Arrival' : 'Departure';
             

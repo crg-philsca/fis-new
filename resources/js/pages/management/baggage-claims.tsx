@@ -40,13 +40,23 @@ interface BaggageClaim {
     is_active: boolean;
 }
 
-interface Props {
-    baggageClaims: BaggageClaim[];
+interface PaginatedBaggageClaims {
+    data: BaggageClaim[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
 }
 
-export default function BaggageClaimManagement({ baggageClaims = [] }: Props) {
+interface Props {
+    baggageClaims: PaginatedBaggageClaims;
+}
+
+export default function BaggageClaimManagement({ baggageClaims }: Props) {
     const [selectedClaim, setSelectedClaim] = useState<BaggageClaim | null>(null);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    
+    const claimsList = baggageClaims.data || [];
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
@@ -85,7 +95,10 @@ export default function BaggageClaimManagement({ baggageClaims = [] }: Props) {
                             Manage baggage claim areas and flight assignments
                         </p>
                     </div>
-                    <Button className="gap-2">
+                    <Button 
+                        className="gap-2"
+                        onClick={() => alert('Baggage claim creation form coming soon')}
+                    >
                         <Plus className="w-4 h-4" />
                         Add Baggage Claim
                     </Button>
@@ -99,7 +112,7 @@ export default function BaggageClaimManagement({ baggageClaims = [] }: Props) {
                             <CardTitle className="text-sm font-medium">Total Claims</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{baggageClaims.length}</div>
+                            <div className="text-2xl font-bold">{baggageClaims.total}</div>
                         </CardContent>
                     </Card>
                     <Card>
@@ -108,7 +121,7 @@ export default function BaggageClaimManagement({ baggageClaims = [] }: Props) {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold text-green-500">
-                                {baggageClaims.filter(c => c.is_active).length}
+                                {claimsList.filter((c: BaggageClaim) => c.is_active).length}
                             </div>
                         </CardContent>
                     </Card>
@@ -130,14 +143,14 @@ export default function BaggageClaimManagement({ baggageClaims = [] }: Props) {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {baggageClaims.length === 0 ? (
+                                {claimsList.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                                             No baggage claim areas found.
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    baggageClaims.map((claim) => (
+                                    claimsList.map((claim) => (
                                         <TableRow key={claim.id}>
                                             <TableCell className="font-medium">
                                                 <div className="flex items-center gap-2">
@@ -175,7 +188,11 @@ export default function BaggageClaimManagement({ baggageClaims = [] }: Props) {
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex items-center justify-end gap-1">
-                                                    <Button variant="ghost" size="icon">
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon"
+                                                        onClick={() => alert(`Edit baggage claim ${claim.claim_area} - Form coming soon`)}
+                                                    >
                                                         <Pencil className="w-4 h-4" />
                                                     </Button>
                                                     <Button 
@@ -192,6 +209,46 @@ export default function BaggageClaimManagement({ baggageClaims = [] }: Props) {
                                 )}
                             </TableBody>
                         </Table>
+                        
+                        {/* Pagination */}
+                        {claimsList.length > 0 && (
+                            <div className="flex items-center justify-between pt-4">
+                                <div className="text-sm text-muted-foreground">
+                                    Showing {((baggageClaims.current_page - 1) * baggageClaims.per_page) + 1} to {Math.min(baggageClaims.current_page * baggageClaims.per_page, baggageClaims.total)} of {baggageClaims.total} entries
+                                </div>
+                                <div className="flex gap-1">
+                                    {baggageClaims.current_page > 1 && (
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={() => router.get(`/management/baggage-claims?page=${baggageClaims.current_page - 1}`)}
+                                        >
+                                            ← Previous
+                                        </Button>
+                                    )}
+                                    {Array.from({ length: Math.min(5, baggageClaims.last_page) }, (_, i) => i + 1).map(page => (
+                                        <Button 
+                                            key={page}
+                                            variant={page === baggageClaims.current_page ? 'default' : 'outline'}
+                                            size="sm"
+                                            className="w-8"
+                                            onClick={() => router.get(`/management/baggage-claims?page=${page}`)}
+                                        >
+                                            {page}
+                                        </Button>
+                                    ))}
+                                    {baggageClaims.current_page < baggageClaims.last_page && (
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={() => router.get(`/management/baggage-claims?page=${baggageClaims.current_page + 1}`)}
+                                        >
+                                            Next →
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 

@@ -14,10 +14,33 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * FlightManagementController
+ * 
+ * FIS Responsibility: Process and manage flight data received from external systems
+ * 
+ * This controller handles CRUD operations for flights within the FIS system.
+ * It does NOT create original flight schedules - those come from airlines/PMS.
+ * 
+ * FIS Role: Receive → Process → Store → Distribute
+ * 
+ * Data Sources:
+ * - Flight schedules: Received from PMS/Airlines (via API or manual entry)
+ * - Status updates: Received from ATC (clearance, weather, delays)
+ * - Gate assignments: Received from PMS (gate operations)
+ * 
+ * Data Distribution:
+ * - Updates sent to PMS for boarding operations
+ * - Updates sent to BHS for baggage routing
+ * - Updates displayed to passengers via boards/apps
+ */
 class FlightManagementController extends Controller
 {
     /**
      * Display a listing of all flights with CRUD operations.
+     * 
+     * Filters: search, status, date range
+     * Used by: Airport staff for monitoring and management
      */
     public function index(Request $request): Response
     {
@@ -58,7 +81,7 @@ class FlightManagementController extends Controller
         // Order by scheduled departure time
         $query->orderBy('scheduled_departure_time', $request->get('order', 'asc'));
 
-        $flights = $query->paginate(20)->withQueryString();
+        $flights = $query->paginate(10)->withQueryString();
 
         // Get dropdown options for create/edit forms
         $statuses = FlightStatus::all(['id', 'status_code', 'status_name']);

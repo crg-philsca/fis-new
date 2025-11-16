@@ -19,7 +19,7 @@ class GateManagementController extends Controller
         $gates = Gate::with([
             'terminal.airport',
             'authorizedAirlines'
-        ])->get()->map(function ($gate) {
+        ])->paginate(10)->through(function ($gate) {
             // Get current departures for this gate
             $currentDepartures = $gate->departures()
                 ->whereHas('flight', function ($q) {
@@ -57,7 +57,7 @@ class GateManagementController extends Controller
         $airlines = Airline::all(['airline_code', 'airline_name']);
 
         return Inertia::render('management/gates', [
-            'gates' => $gates,
+            'gates' => $gates->withQueryString(),
             'terminals' => $terminals,
             'airlines' => $airlines,
         ]);

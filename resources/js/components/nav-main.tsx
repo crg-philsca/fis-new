@@ -110,7 +110,7 @@ export function NavMain() {
                         <SidebarMenuButton 
                             asChild 
                             isActive={currentUrl.includes('/flights/management')}
-                            tooltip="Manage Flights (CRUD)"
+                            tooltip="Manage Flights"
                         >
                             <Link href="/flights/management">
                                 <Edit3 className="w-4 h-4" />
@@ -123,7 +123,7 @@ export function NavMain() {
                         <SidebarMenuButton 
                             asChild 
                             isActive={currentUrl.includes('/flights/status-update')}
-                            tooltip="Quick Status Update"
+                            tooltip="Status Update"
                         >
                             <Link href="/flights/status-update">
                                 <Zap className="w-4 h-4" />

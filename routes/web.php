@@ -13,11 +13,17 @@ use App\Http\Controllers\FlightStatusUpdateController;
 use App\Http\Controllers\TerminalManagementController;
 use App\Http\Controllers\GateManagementController;
 use App\Http\Controllers\BaggageClaimManagementController;
+use App\Http\Controllers\DocumentationController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
+// --- DOCUMENTATION ROUTES (Public) ---
+Route::prefix('docs')->name('docs.')->group(function () {
+    Route::get('/', [DocumentationController::class, 'index'])->name('index');
+    Route::get('/{file}', [DocumentationController::class, 'show'])->name('show');
+});
 
 Route::middleware(['auth', 'verified', 'prevent-back'])->group(function () {
     

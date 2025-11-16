@@ -35,7 +35,7 @@ class FlightConnectionController extends Controller
                   ->orWhereHas('outboundConnections');
         })
         ->orderBy('scheduled_departure_time', 'asc')
-        ->paginate(20)
+        ->paginate(10)
         ->through(function ($flight) {
             $flight->has_connections = true;
             $flight->type = 'Connection';

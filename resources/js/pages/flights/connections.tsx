@@ -10,9 +10,16 @@ import {
     ArrowRight,
     Clock,
     MapPin,
-    Plane
+    Plane,
+    Radio,
+    AlertCircle,
+    CheckCircle2,
+    X,
+    Calendar,
+    PlaneTakeoff,
+    PlaneLanding
 } from 'lucide-react';
-import { Link, Head, usePage } from '@inertiajs/react';
+import { Link, Head, usePage, router } from '@inertiajs/react';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -68,6 +75,7 @@ interface Flight {
     scheduled_departure_time: string;
     scheduled_arrival_time: string | null;
     status_id: number;
+    aircraft_icao_code?: string | null;
     type?: 'Arrival' | 'Departure' | 'Connection';
     
     // Relationships
@@ -75,6 +83,9 @@ interface Flight {
     airline: Airline;
     origin: Airport;
     destination: Airport;
+    aircraft?: {
+        icao_code?: string;
+    };
     departure?: {
         gate?: Gate;
     };
@@ -110,7 +121,7 @@ interface Props {
 
 export default function FlightConnections({ flights, title }: Props) {
     const [searchQuery, setSearchQuery] = useState('');
-    const [filteredFlights, setFilteredFlights] = useState(flights.data);
+    const [isLive, setIsLive] = useState(true);
     const [lastUpdate, setLastUpdate] = useState(new Date());
     const page = usePage<SharedData>();
     const userTimezone = (page.props as any).user_timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
@@ -147,46 +158,43 @@ export default function FlightConnections({ flights, title }: Props) {
         }
     };
 
-    // Live update indicator
+    // Simulate live updates indicator
     useEffect(() => {
-        const timer = setInterval(() => {
+        const interval = setInterval(() => {
             setLastUpdate(new Date());
         }, 30000); // Update every 30 seconds
 
-        return () => clearInterval(timer);
+        return () => clearInterval(interval);
     }, []);
 
-    // Search functionality
-    useEffect(() => {
-        if (!searchQuery.trim()) {
-            setFilteredFlights(flights.data);
-            return;
-        }
-
+    const filteredFlights = flights.data.filter(flight => {
+        if (!searchQuery) return true;
         const query = searchQuery.toLowerCase();
-        const filtered = flights.data.filter(flight => 
+        return (
             flight.flight_number.toLowerCase().includes(query) ||
-            flight.airline.airline_name.toLowerCase().includes(query) ||
-            flight.origin.city.toLowerCase().includes(query) ||
-            flight.destination.city.toLowerCase().includes(query) ||
-            flight.status.status_name.toLowerCase().includes(query)
+            flight.airline?.airline_name.toLowerCase().includes(query) ||
+            flight.origin?.city.toLowerCase().includes(query) ||
+            flight.destination?.city.toLowerCase().includes(query) ||
+            flight.origin_code.toLowerCase().includes(query) ||
+            flight.destination_code.toLowerCase().includes(query)
         );
-        setFilteredFlights(filtered);
-    }, [searchQuery, flights.data]);
+    });
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Connecting Flights', href: '/connections' },
+        { title: 'Flight Schedules', href: '/schedule/all' },
+        { title: 'Connections', href: '#' },
     ];
 
     const getStatusColor = (statusCode: string) => {
         switch (statusCode) {
-            case 'SCH': return 'bg-blue-500/20 text-blue-400 border-blue-500/30 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30';
-            case 'BRD': return 'bg-green-500/20 text-green-400 border-green-500/30 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/30';
-            case 'DEP': return 'bg-purple-500/20 text-purple-400 border-purple-500/30 dark:bg-purple-500/20 dark:text-purple-400 dark:border-purple-500/30';
-            case 'ARR': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30';
-            case 'DLY': return 'bg-orange-500/20 text-orange-400 border-orange-500/30 dark:bg-orange-500/20 dark:text-orange-400 dark:border-orange-500/30';
-            case 'CNX': return 'bg-red-500/20 text-red-400 border-red-500/30 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30';
+            case 'SCH': return 'bg-blue-500/20 text-blue-400 border-blue-500/30 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30'; // Scheduled
+            case 'BRD': return 'bg-green-500/20 text-green-400 border-green-500/30 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/30'; // Boarding
+            case 'DEP': return 'bg-green-600/20 text-green-600 border-green-600/30 dark:bg-green-600/20 dark:text-green-500 dark:border-green-600/30'; // Departed - Less Bright Green
+            case 'ARR': return 'bg-purple-500/20 text-purple-400 border-purple-500/30 dark:bg-purple-500/20 dark:text-purple-400 dark:border-purple-500/30'; // Arrived - Purple
+            case 'DLY': return 'bg-orange-500/20 text-orange-400 border-orange-500/30 dark:bg-orange-500/20 dark:text-orange-400 dark:border-orange-500/30'; // Delayed
+            case 'CNX': return 'bg-red-500/20 text-red-400 border-red-500/30 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30'; // Cancelled
+            case 'DIV': return 'bg-orange-500/20 text-orange-400 border-orange-500/30 dark:bg-orange-500/20 dark:text-orange-400 dark:border-orange-500/30'; // Diverted
             default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30 dark:bg-gray-500/20 dark:text-gray-400 dark:border-gray-500/30';
         }
     };
@@ -197,69 +205,148 @@ export default function FlightConnections({ flights, title }: Props) {
             <Head title={title} />
 
             <div className="space-y-6 py-6 px-4">
-                {/* Header Section */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-                            <RouteIcon className="w-8 h-8 text-primary" />
-                            {title}
-                        </h1>
-                        <p className="text-muted-foreground mt-1">
-                            Flights requiring passenger transfers or connections
-                        </p>
+                {/* Header Section with Live Indicator */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div>
+                            <div className="flex items-center gap-3">
+                                <RouteIcon className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                                <h2 className="text-3xl font-bold tracking-tight">Connections</h2>
+                            </div>
+                            <p className="text-muted-foreground mt-1 flex items-center gap-2">
+                                Connecting flights • {flights.total} total
+                                <span className="flex items-center gap-1 text-xs">
+                                    {isLive ? (
+                                        <>
+                                            <Radio className="w-3 h-3 text-green-500 dark:text-green-400 animate-pulse" />
+                                            <span className="text-green-600 dark:text-green-400 font-medium">LIVE</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <AlertCircle className="w-3 h-3 text-yellow-500 dark:text-yellow-400" />
+                                            <span className="text-yellow-600 dark:text-yellow-400">OFFLINE</span>
+                                        </>
+                                    )}
+                                    <span className="text-muted-foreground ml-2">
+                                        Updated {new Intl.DateTimeFormat('en-GB', {
+                                            timeZone: 'UTC',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            second: '2-digit',
+                                            hour12: false
+                                        }).format(lastUpdate)}
+                                    </span>
+                                </span>
+                            </p>
+                        </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted/50 border">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                                Live • Updated {format(lastUpdate, 'HH:mm:ss')}
-                            </span>
-                        </div>
+                    <div className="flex gap-2">
+                        <Badge 
+                            variant="outline"
+                            className="cursor-pointer hover:bg-primary/80 min-w-[120px] justify-center"
+                        >
+                            <Link href="/schedule/all" className="px-3 py-1 flex items-center justify-center gap-1.5">
+                                <Calendar className="w-3 h-3" />
+                                All Flights
+                            </Link>
+                        </Badge>
+                        <Badge 
+                            variant="outline"
+                            className="cursor-pointer hover:bg-primary/80 min-w-[120px] justify-center"
+                        >
+                            <Link href="/schedule/arrivals" className="px-3 py-1 flex items-center justify-center gap-1.5">
+                                <PlaneLanding className="w-3 h-3" />
+                                Arrivals
+                            </Link>
+                        </Badge>
+                        <Badge 
+                            variant="outline"
+                            className="cursor-pointer hover:bg-primary/80 min-w-[120px] justify-center"
+                        >
+                            <Link href="/schedule/departures" className="px-3 py-1 flex items-center justify-center gap-1.5">
+                                <PlaneTakeoff className="w-3 h-3" />
+                                Departures
+                            </Link>
+                        </Badge>
+                        <Badge 
+                            variant="default"
+                            className="cursor-pointer hover:bg-primary/80 min-w-[120px] justify-center"
+                        >
+                            <Link href="/connections" className="px-3 py-1 flex items-center justify-center gap-1.5">
+                                <RouteIcon className="w-3 h-3" />
+                                Connections
+                            </Link>
+                        </Badge>
                     </div>
                 </div>
 
                 <Separator />
+                
+                {/* Success/Info Message */}
+                {flights.data && flights.data.length > 0 && (
+                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                        <p className="text-sm text-green-800 dark:text-green-200">
+                            {filteredFlights.length} connecting flight(s) displayed
+                        </p>
+                    </div>
+                )}
 
-                {/* Main Content Card */}
+                {/* Search and Table Card */}
                 <Card>
-                    <CardContent className="p-6">
-                        {/* Search and Actions Bar */}
-                        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                    <CardContent className="pt-6">
+                        {/* Search Bar */}
+                        <div className="flex items-center gap-4 mb-6">
                             <div className="relative flex-1">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
-                                    type="text"
-                                    placeholder="Search by flight number, airline, city, or status..."
-                                    className="pl-10"
+                                    placeholder="Search by flight number, airline, or destination..."
+                                    className="pl-10 pr-10"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
+                                {searchQuery && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearchQuery('')}
+                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                )}
                             </div>
+                            <Button 
+                                variant="outline" 
+                                className="gap-2"
+                                onClick={() => router.reload()}
+                            >
+                                <Clock className="w-4 h-4" />
+                                Refresh
+                            </Button>
                         </div>
 
-                        {/* Flights Table */}
-                        <div className="rounded-md border">
-                            <Table>
+                        {/* Flight Table */}
+                        <div className="rounded-lg border">
+                            <Table className="table-fixed">
                                 <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Flight</TableHead>
-                                        <TableHead>Route</TableHead>
-                                        <TableHead>Connection Type</TableHead>
-                                        <TableHead>Schedule</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Terminal</TableHead>
-                                        <TableHead>Gate</TableHead>
-                                        <TableHead>Baggage Belt</TableHead>
+                                    <TableRow className="bg-muted/50">
+                                        <TableHead className="font-semibold text-center w-24">Flight #</TableHead>
+                                        <TableHead className="font-semibold text-center w-32">Route</TableHead>
+                                        <TableHead className="font-semibold text-center w-28">Airline</TableHead>
+                                        <TableHead className="font-semibold text-center w-28">Aircraft</TableHead>
+                                        <TableHead className="font-semibold text-center w-24">Terminal</TableHead>
+                                        <TableHead className="font-semibold text-center w-20">Gate</TableHead>
+                                        <TableHead className="font-semibold text-center w-20">Belt</TableHead>
+                                        <TableHead className="font-semibold text-center w-28">Departure</TableHead>
+                                        <TableHead className="font-semibold text-center w-28">Arrival</TableHead>
+                                        <TableHead className="font-semibold text-center w-24">Status</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {filteredFlights.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={8} className="h-24 text-center">
+                                            <TableCell colSpan={10} className="h-24 text-center">
                                                 <div className="flex flex-col items-center justify-center text-muted-foreground">
                                                     <RouteIcon className="w-8 h-8 mb-2 opacity-50" />
                                                     <p>No connecting flights found</p>
@@ -271,100 +358,71 @@ export default function FlightConnections({ flights, title }: Props) {
                                         </TableRow>
                                     ) : (
                                         filteredFlights.map((flight) => (
-                                            <TableRow key={flight.id}>
-                                                {/* Flight Number */}
-                                                <TableCell className="font-medium">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-base">{flight.flight_number}</span>
-                                                        <span className="text-xs text-muted-foreground">{flight.airline.airline_name}</span>
+                                            <TableRow key={flight.id} className="hover:bg-accent/50 dark:hover:bg-accent/30 transition-colors">
+                                                {/* Flight Number with Connection Type */}
+                                                <TableCell className="font-bold text-primary w-24">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="truncate">{flight.flight_number}</span>
+                                                        {flight.inbound_connections && flight.inbound_connections.length > 0 && (
+                                                            <Badge variant="outline" className="gap-1 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800 inline-flex items-center justify-center h-5 px-1.5 shrink-0">
+                                                                <Plane className="w-3 h-3 rotate-180" />
+                                                            </Badge>
+                                                        )}
+                                                        {flight.outbound_connections && flight.outbound_connections.length > 0 && (
+                                                            <Badge variant="outline" className="gap-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800 inline-flex items-center justify-center h-5 px-1.5 shrink-0">
+                                                                <Plane className="w-3 h-3" />
+                                                            </Badge>
+                                                        )}
                                                     </div>
                                                 </TableCell>
 
                                                 {/* Route */}
-                                                <TableCell>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="text-sm">
-                                                            <div className="font-medium">{flight.origin.iata_code}</div>
-                                                            <div className="text-xs text-muted-foreground">{flight.origin.city}</div>
+                                                <TableCell className="text-left w-32">
+                                                    <div className="flex flex-col">
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="font-medium text-sm text-right flex-1 truncate">{flight.origin?.iata_code || flight.origin_code}</span>
+                                                            <span className="text-muted-foreground text-xs shrink-0">→</span>
+                                                            <span className="font-medium text-sm text-left flex-1 truncate">{flight.destination?.iata_code || flight.destination_code}</span>
                                                         </div>
-                                                        <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                                                        <div className="text-sm">
-                                                            <div className="font-medium">{flight.destination.iata_code}</div>
-                                                            <div className="text-xs text-muted-foreground">{flight.destination.city}</div>
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="text-xs text-muted-foreground text-right flex-1 truncate">{flight.origin?.city || ''}</span>
+                                                            <span className="text-muted-foreground text-xs shrink-0">→</span>
+                                                            <span className="text-xs text-muted-foreground text-left flex-1 truncate">{flight.destination?.city || ''}</span>
                                                         </div>
                                                     </div>
                                                 </TableCell>
 
-                                                {/* Connection Type */}
-                                                <TableCell>
-                                                    <div className="flex flex-col gap-1">
-                                                        {flight.inbound_connections && flight.inbound_connections.length > 0 && (
-                                                            <Badge variant="outline" className="w-fit text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800">
-                                                                <Plane className="w-3 h-3 mr-1 rotate-180" />
-                                                                {flight.inbound_connections.length} Inbound
-                                                            </Badge>
-                                                        )}
-                                                        {flight.outbound_connections && flight.outbound_connections.length > 0 && (
-                                                            <Badge variant="outline" className="w-fit text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
-                                                                <Plane className="w-3 h-3 mr-1" />
-                                                                {flight.outbound_connections.length} Outbound
-                                                            </Badge>
-                                                        )}
-                                                        {(!flight.inbound_connections || flight.inbound_connections.length === 0) && 
-                                                         (!flight.outbound_connections || flight.outbound_connections.length === 0) && (
-                                                            <Badge variant="outline" className="w-fit text-xs bg-gray-50 dark:bg-gray-900/20 text-gray-700 dark:text-gray-400">
-                                                                No connections
-                                                            </Badge>
-                                                        )}
+                                                {/* Airline */}
+                                                <TableCell className="w-28">
+                                                    <div className="flex flex-col items-center text-center">
+                                                        <span className="font-medium text-sm truncate w-full">{flight.airline?.airline_name || 'N/A'}</span>
+                                                        <span className="text-xs text-muted-foreground">{flight.airline_code}</span>
                                                     </div>
                                                 </TableCell>
 
-                                                {/* Schedule */}
-                                                <TableCell>
-                                                    <div className="flex flex-col gap-1 text-sm">
-                                                        <div className="flex flex-col">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                                                                <span className="text-xs text-muted-foreground">Dep:</span>
-                                                                <span className="font-medium">{formatTime(flight.scheduled_departure_time)}</span>
-                                                            </div>
-                                                            <span className="text-xs text-muted-foreground ml-5">{formatDate(flight.scheduled_departure_time)}</span>
+                                                {/* Aircraft */}
+                                                <TableCell className="w-28">
+                                                    {flight.aircraft ? (
+                                                        <div className="flex flex-col items-center text-center">
+                                                            <span className="font-medium text-sm truncate w-full">{flight.aircraft_icao_code || 'N/A'}</span>
                                                         </div>
-                                                        {flight.scheduled_arrival_time && (
-                                                            <div className="flex flex-col">
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                                                                    <span className="text-xs text-muted-foreground">Arr:</span>
-                                                                    <span className="font-medium">{formatTime(flight.scheduled_arrival_time)}</span>
-                                                                </div>
-                                                                <span className="text-xs text-muted-foreground ml-5">{formatDate(flight.scheduled_arrival_time)}</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-
-                                                {/* Status */}
-                                                <TableCell>
-                                                    <Badge 
-                                                        variant="outline" 
-                                                        className={`${getStatusColor(flight.status.status_code)} font-medium`}
-                                                    >
-                                                        {flight.status.status_name}
-                                                    </Badge>
+                                                    ) : (
+                                                        <span className="text-muted-foreground text-sm">N/A</span>
+                                                    )}
                                                 </TableCell>
 
                                                 {/* Terminal */}
-                                                <TableCell>
+                                                <TableCell className="w-24 text-center">
                                                     {flight.terminal ? (
-                                                        <div className="flex flex-col text-sm">
-                                                            <span className="font-medium">{flight.terminal.terminal_code || flight.terminal.name || 'N/A'}</span>
+                                                        <div className="flex flex-col items-center justify-center text-center">
+                                                            <span className="font-medium text-sm">{flight.terminal.terminal_code || flight.terminal.name || 'N/A'}</span>
                                                             {flight.terminal.name && flight.terminal.terminal_code && (
                                                                 <span className="text-xs text-muted-foreground">{flight.terminal.name}</span>
                                                             )}
                                                         </div>
                                                     ) : (flight.gate?.terminal || flight.baggageBelt?.terminal) ? (
-                                                        <div className="flex flex-col text-sm">
-                                                            <span className="font-medium">
+                                                        <div className="flex flex-col items-center justify-center text-center">
+                                                            <span className="font-medium text-sm">
                                                                 {(flight.gate?.terminal || flight.baggageBelt?.terminal)?.terminal_code || 
                                                                  (flight.gate?.terminal || flight.baggageBelt?.terminal)?.name || 'N/A'}
                                                             </span>
@@ -380,32 +438,62 @@ export default function FlightConnections({ flights, title }: Props) {
                                                 </TableCell>
 
                                                 {/* Gate */}
-                                                <TableCell>
+                                                <TableCell className="text-center w-20">
                                                     {(flight.departure?.gate || flight.gate) ? (
-                                                        <div className="flex items-center gap-1.5 text-sm">
-                                                            <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
-                                                            <span className="font-medium">
-                                                                {(flight.departure?.gate || flight.gate)?.gate_number || 
-                                                                 (flight.departure?.gate || flight.gate)?.gate_code || 'N/A'}
-                                                            </span>
-                                                        </div>
+                                                        <span className="font-medium text-sm truncate">
+                                                            {(flight.departure?.gate || flight.gate)?.gate_number || 
+                                                             (flight.departure?.gate || flight.gate)?.gate_code || 'N/A'}
+                                                        </span>
                                                     ) : (
                                                         <span className="font-bold text-sm">N/A</span>
                                                     )}
                                                 </TableCell>
 
                                                 {/* Baggage Belt */}
-                                                <TableCell>
+                                                <TableCell className="text-center w-20">
                                                     {(flight.arrival?.baggage_belt || flight.baggageBelt) ? (
-                                                        <div className="flex items-center gap-1.5 text-sm">
-                                                            <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
-                                                            <span className="font-medium">
-                                                                {(flight.arrival?.baggage_belt || flight.baggageBelt)?.belt_code || 'N/A'}
-                                                            </span>
-                                                        </div>
+                                                        <span className="font-medium text-sm truncate">
+                                                            {(flight.arrival?.baggage_belt || flight.baggageBelt)?.belt_code || 'N/A'}
+                                                        </span>
                                                     ) : (
                                                         <span className="font-bold text-sm">N/A</span>
                                                     )}
+                                                </TableCell>
+
+                                                {/* Departure */}
+                                                <TableCell className="w-28">
+                                                    <div className="flex flex-col items-center text-center">
+                                                        <span className="font-medium flex items-center gap-1 text-sm">
+                                                            <Clock className="w-3 h-3 shrink-0" />
+                                                            <span className="truncate">{formatTime(flight.scheduled_departure_time)}</span>
+                                                        </span>
+                                                        <span className="text-xs text-muted-foreground text-center truncate w-full">
+                                                            {formatDate(flight.scheduled_departure_time)}
+                                                        </span>
+                                                    </div>
+                                                </TableCell>
+
+                                                {/* Arrival */}
+                                                <TableCell className="w-28">
+                                                    <div className="flex flex-col items-center text-center">
+                                                        <span className="font-medium flex items-center gap-1 text-sm">
+                                                            <Clock className="w-3 h-3 shrink-0" />
+                                                            <span className="truncate">{formatTime(flight.scheduled_arrival_time)}</span>
+                                                        </span>
+                                                        <span className="text-xs text-muted-foreground text-center truncate w-full">
+                                                            {formatDate(flight.scheduled_arrival_time)}
+                                                        </span>
+                                                    </div>
+                                                </TableCell>
+
+                                                {/* Status */}
+                                                <TableCell className="text-center w-24">
+                                                    <Badge 
+                                                        variant="outline" 
+                                                        className={`${getStatusColor(flight.status.status_code)} font-medium`}
+                                                    >
+                                                        {flight.status.status_name}
+                                                    </Badge>
                                                 </TableCell>
                                             </TableRow>
                                         ))
@@ -415,19 +503,19 @@ export default function FlightConnections({ flights, title }: Props) {
                         </div>
 
                         {/* Pagination */}
-                        {flights.data.length > 0 && (
+                        {flights.total > 0 && (
                             <div className="flex items-center justify-between pt-4">
                                 <div className="text-sm text-muted-foreground">
                                     Showing {(flights.current_page - 1) * flights.per_page + 1} to {Math.min(flights.current_page * flights.per_page, flights.total)} of {flights.total} entries
                                 </div>
                                 <div className="flex gap-1">
                                     {flights.current_page > 1 && (
-                                        <Link href={`?page=${flights.current_page - 1}`}>
+                                        <Link href={`/connections?page=${flights.current_page - 1}`} preserveState>
                                             <Button variant="outline" size="sm">Previous</Button>
                                         </Link>
                                     )}
                                     {flights.current_page < flights.last_page && (
-                                        <Link href={`?page=${flights.current_page + 1}`}>
+                                        <Link href={`/connections?page=${flights.current_page + 1}`} preserveState>
                                             <Button variant="outline" size="sm">Next</Button>
                                         </Link>
                                     )}

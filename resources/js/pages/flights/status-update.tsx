@@ -203,7 +203,7 @@ export default function StatusUpdate({ flights, options }: Props) {
                                     </TableRow>
                                 ) : (
                                     filteredFlights.map((flight) => (
-                                        <TableRow key={`flight-${flight.id}`}>
+                                        <TableRow key={`flight-${flight.id}`} className="hover:bg-accent/50 dark:hover:bg-accent/30 transition-colors">
                                             <TableCell>
                                                 <div>
                                                     <div className="font-medium flex items-center gap-2">

@@ -277,7 +277,13 @@ export default function FlightsIndex({ flights, scheduleType, localAirport, opti
                                         </>
                                     )}
                                     <span className="text-muted-foreground ml-2">
-                                        Updated {format(lastUpdate, 'HH:mm:ss')}
+                                        Updated {new Intl.DateTimeFormat('en-GB', {
+                                            timeZone: 'UTC',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            second: '2-digit',
+                                            hour12: false
+                                        }).format(lastUpdate)}
                                     </span>
                                 </span>
                             </p>
@@ -310,6 +316,15 @@ export default function FlightsIndex({ flights, scheduleType, localAirport, opti
                             <Link href="/schedule/departures" className="px-3 py-1 flex items-center justify-center gap-1.5">
                                 <PlaneTakeoff className="w-3 h-3" />
                                 Departures
+                            </Link>
+                        </Badge>
+                        <Badge 
+                            variant="outline"
+                            className="cursor-pointer hover:bg-primary/80 min-w-[120px] justify-center"
+                        >
+                            <Link href="/connections" className="px-3 py-1 flex items-center justify-center gap-1.5">
+                                <RouteIcon className="w-3 h-3" />
+                                Connections
                             </Link>
                         </Badge>
                     </div>
@@ -382,7 +397,7 @@ export default function FlightsIndex({ flights, scheduleType, localAirport, opti
                                 <TableBody>
                                     {filteredFlights && filteredFlights.length > 0 ? (
                                         filteredFlights.map((flight) => (
-                                            <TableRow key={flight.id} className="hover:bg-muted/50 transition-colors">
+                                            <TableRow key={flight.id} className="hover:bg-accent/50 dark:hover:bg-accent/30 transition-colors">
                                                 <TableCell className="font-bold text-primary w-24">
                                                     <div className="flex items-center gap-2">
                                                         <span className="truncate">{flight.flight_number}</span>

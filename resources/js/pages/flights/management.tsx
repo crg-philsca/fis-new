@@ -391,7 +391,7 @@ export default function FlightManagement({ flights, filters, options }: Props) {
                                         </TableRow>
                                     ) : (
                                         flights.data.map((flight) => (
-                                            <TableRow key={flight.id} className="hover:bg-muted/50 transition-colors">
+                                            <TableRow key={flight.id} className="hover:bg-accent/50 dark:hover:bg-accent/30 transition-colors">
                                                 <TableCell className="font-bold text-primary w-24">
                                                     <div className="flex items-center gap-2">
                                                         <span className="truncate">{flight.flight_number}</span>

@@ -315,7 +315,7 @@ export default function TerminalManagement({ terminals, airports, filters, stats
                                     </TableRow>
                                 ) : (
                                     terminalsList.map((terminal) => (
-                                        <TableRow key={`terminal-${terminal.id}`}>
+                                        <TableRow key={`terminal-${terminal.id}`} className="hover:bg-accent/50 dark:hover:bg-accent/30 transition-colors">
                                             <TableCell className="font-medium">
                                                 <div>{terminal.terminal_code}</div>
                                                 {terminal.name && (

@@ -316,7 +316,7 @@ export default function GateManagement({ gates, terminals = [], filters = {}, st
                                         </TableRow>
                                     ) : (
                                         gatesList.map((gate) => (
-                                            <TableRow key={`gate-${gate.id}`}>
+                                            <TableRow key={`gate-${gate.id}`} className="hover:bg-accent/50 dark:hover:bg-accent/30 transition-colors">
                                                 <TableCell className="font-medium">
                                                     <div className="flex items-center gap-2">
                                                         <DoorOpen className="w-4 h-4 text-muted-foreground" />

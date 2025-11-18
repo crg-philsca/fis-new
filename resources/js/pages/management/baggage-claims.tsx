@@ -269,7 +269,7 @@ export default function BaggageClaimManagement({ baggageClaims, terminals = [], 
                                     </TableRow>
                                 ) : (
                                     claimsList.map((claim) => (
-                                        <TableRow key={`claim-${claim.id}`}>
+                                        <TableRow key={`claim-${claim.id}`} className="hover:bg-accent/50 dark:hover:bg-accent/30 transition-colors">
                                             <TableCell className="font-medium">
                                                 <div className="flex items-center gap-2">
                                                     <Luggage className="w-4 h-4 text-muted-foreground" />

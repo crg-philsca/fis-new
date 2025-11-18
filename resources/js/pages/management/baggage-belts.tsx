@@ -289,7 +289,7 @@ export default function BaggageBeltManagement({ baggageBelts, terminals = [], fi
                                     </TableRow>
                                 ) : (
                                     beltsList.map((belt) => (
-                                        <TableRow key={`belt-${belt.id}`}>
+                                        <TableRow key={`belt-${belt.id}`} className="hover:bg-accent/50 dark:hover:bg-accent/30 transition-colors">
                                             <TableCell>
                                                 <div className="flex items-center gap-2">
                                                     <Luggage className="w-4 h-4 text-muted-foreground" />

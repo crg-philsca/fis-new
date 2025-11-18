@@ -148,12 +148,13 @@ class FlightManagementController extends Controller
         // Provide recent arrival flights as candidate connecting flights.
         // These are flights that have arrived or will arrive soon, which can be connected to new departure flights.
         // Frontend will filter these by selected origin to suggest appropriate connections.
+        // Reduced limit to prevent browser crashes on large datasets
         $connectingFlights = Flight::query()
             ->select(['id', 'flight_number', 'airline_code', 'origin_code', 'destination_code', 'scheduled_departure_time', 'scheduled_arrival_time'])
             ->whereNotNull('scheduled_arrival_time')
             ->whereBetween('scheduled_arrival_time', [now()->subHours(12), now()->addHours(72)]) // Extended to 72 hours for more options
             ->orderBy('scheduled_arrival_time', 'desc')
-            ->limit(500) // Increased limit for more options
+            ->limit(100) // Reduced from 500 to prevent browser crashes
             ->get();
 
         return Inertia::render('flights/management', [
@@ -335,6 +336,7 @@ class FlightManagementController extends Controller
             }
         }
 
+        // Use Inertia redirect to avoid full page reload and prevent browser crashes
         return redirect()->back()->with('success', 'Flight created successfully.');
     }
 

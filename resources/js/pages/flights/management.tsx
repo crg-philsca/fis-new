@@ -481,7 +481,7 @@ export default function FlightManagement({ flights, filters, options }: Props) {
                                                     )}
                                                 </TableCell>
                                                 <TableCell className="text-center w-20">
-                                                    {flight.baggage_belt?.belt_code ? (
+                                                    {flight.baggage_belt?.belt_code && flight.baggage_belt.belt_code !== 'UNASSIGNED' ? (
                                                         <span className="font-medium text-sm truncate">
                                                             {flight.baggage_belt.belt_code}
                                                         </span>

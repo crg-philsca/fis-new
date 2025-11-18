@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { RefreshCw, Search, Plane, MapPin } from 'lucide-react';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, Link } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
+import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -50,8 +51,16 @@ interface FlightData {
     };
 }
 
+interface PaginatedFlights {
+    data: FlightData[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+}
+
 interface Props {
-    flights: FlightData[];
+    flights: PaginatedFlights;
     options: {
         statuses: FlightStatus[];
         gates: Gate[];
@@ -61,15 +70,15 @@ interface Props {
 
 export default function StatusUpdate({ flights, options }: Props) {
     const [searchQuery, setSearchQuery] = useState('');
-    const [filteredFlights, setFilteredFlights] = useState(flights);
+    const [filteredFlights, setFilteredFlights] = useState(flights.data);
     const [flightStatuses, setFlightStatuses] = useState<Record<number, number>>(
-        flights.reduce((acc, flight) => ({ ...acc, [flight.id]: flight.status.id }), {})
+        flights.data.reduce((acc, flight) => ({ ...acc, [flight.id]: flight.status.id }), {})
     );
     const [flightGates, setFlightGates] = useState<Record<number, number | null>>(
-        flights.reduce((acc, flight) => ({ ...acc, [flight.id]: flight.gate.id }), {})
+        flights.data.reduce((acc, flight) => ({ ...acc, [flight.id]: flight.gate.id }), {})
     );
     const [flightBaggageBelts, setFlightBaggageBelts] = useState<Record<number, number | null>>(
-        flights.reduce((acc, flight) => ({ ...acc, [flight.id]: flight.baggage_belt.id }), {})
+        flights.data.reduce((acc, flight) => ({ ...acc, [flight.id]: flight.baggage_belt.id }), {})
     );
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -79,15 +88,25 @@ export default function StatusUpdate({ flights, options }: Props) {
 
     const handleSearch = () => {
         if (searchQuery.trim()) {
-            const filtered = flights.filter(f => 
+            const filtered = flights.data.filter(f => 
                 f.flight_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                f.airline.toLowerCase().includes(searchQuery.toLowerCase())
+                (f.airline || '').toLowerCase().includes(searchQuery.toLowerCase())
             );
             setFilteredFlights(filtered);
         } else {
-            setFilteredFlights(flights);
+            setFilteredFlights(flights.data);
         }
     };
+
+    // Update filtered flights when flights data changes (pagination)
+    React.useEffect(() => {
+        if (!searchQuery.trim()) {
+            setFilteredFlights(flights.data);
+            setFlightStatuses(flights.data.reduce((acc, flight) => ({ ...acc, [flight.id]: flight.status.id }), {}));
+            setFlightGates(flights.data.reduce((acc, flight) => ({ ...acc, [flight.id]: flight.gate.id }), {}));
+            setFlightBaggageBelts(flights.data.reduce((acc, flight) => ({ ...acc, [flight.id]: flight.baggage_belt.id }), {}));
+        }
+    }, [flights.data, searchQuery]);
 
     const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
@@ -180,7 +199,7 @@ export default function StatusUpdate({ flights, options }: Props) {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Today's Flights ({filteredFlights.length})</CardTitle>
+                        <CardTitle>All Flights ({flights.total})</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
                         <Table>
@@ -290,6 +309,40 @@ export default function StatusUpdate({ flights, options }: Props) {
                             </TableBody>
                         </Table>
                     </CardContent>
+                    {/* Pagination */}
+                    {flights.total > 0 && (
+                        <div className="flex items-center justify-between px-6 py-4 border-t">
+                            <div className="text-sm text-muted-foreground">
+                                Showing {(flights.current_page - 1) * flights.per_page + 1} to {Math.min(flights.current_page * flights.per_page, flights.total)} of {flights.total} entries
+                            </div>
+                            <div className="flex gap-1">
+                                {flights.current_page > 1 && (
+                                    <Link href={`/flights/status-update?page=${flights.current_page - 1}`} preserveState>
+                                        <Button variant="outline" size="sm">← Previous</Button>
+                                    </Link>
+                                )}
+                                {Array.from({ length: Math.min(5, flights.last_page) }, (_, i) => {
+                                    const page = i + 1;
+                                    return (
+                                        <Link key={page} href={`/flights/status-update?page=${page}`} preserveState>
+                                            <Button 
+                                                variant={page === flights.current_page ? 'default' : 'outline'}
+                                                size="sm"
+                                                className={`w-8 ${page === flights.current_page ? 'bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600' : ''}`}
+                                            >
+                                                {page}
+                                            </Button>
+                                        </Link>
+                                    );
+                                })}
+                                {flights.current_page < flights.last_page && (
+                                    <Link href={`/flights/status-update?page=${flights.current_page + 1}`} preserveState>
+                                        <Button variant="outline" size="sm">Next →</Button>
+                                    </Link>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </Card>
             </div>
         </AppLayout>

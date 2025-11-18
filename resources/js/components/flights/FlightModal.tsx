@@ -138,7 +138,7 @@ export default function FlightModal({ open, onOpenChange, options, initialData =
         try {
             form.setData('flight_number', initialData.flight_number || '');
             form.setData('airline_code', initialData.airline_code || '');
-            form.setData('aircraft_icao_code', initialData.aircraft_icao_code || 'none');
+            form.setData('aircraft_icao_code', initialData.aircraft_icao_code || '');
             form.setData('origin_code', initialData.origin_code || '');
             form.setData('destination_code', initialData.destination_code || '');
             
@@ -219,8 +219,8 @@ export default function FlightModal({ open, onOpenChange, options, initialData =
         e.preventDefault();
         const submitData: any = { ...form.data };
         
-        // Remove empty aircraft_icao_code if it's an empty string or 'none' (but keep null for explicit nulls)
-        if (submitData.aircraft_icao_code === '' || submitData.aircraft_icao_code === 'none') {
+        // Remove empty aircraft_icao_code if it's an empty string (but keep null for explicit nulls)
+        if (submitData.aircraft_icao_code === '') {
             submitData.aircraft_icao_code = null;
         }
 
@@ -633,7 +633,7 @@ export default function FlightModal({ open, onOpenChange, options, initialData =
                                     {initialData?.id ? 'Updating…' : 'Creating…'}
                                 </span>
                             ) : (
-                                <>{initialData?.id ? 'Update Flight' : 'Create Flight'}</>
+                                <>{initialData?.id ? 'Update Flight' : 'Create'}</>
                             )}
                         </Button>
                     </DialogFooter>

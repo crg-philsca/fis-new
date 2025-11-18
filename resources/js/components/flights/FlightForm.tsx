@@ -166,7 +166,7 @@ export default function FlightForm<TForm extends { data: any; setData: (k: strin
         <div className="grid gap-4 py-4">
             <div className="grid gap-2">
                 <Label htmlFor="flight_number">Flight Number *</Label>
-                <Input id="flight_number" value={form.data.flight_number} onChange={(e: any) => onFlightNumberChange(e.target.value)} required />
+                <Input id="flight_number" value={form.data.flight_number} onChange={(e: any) => onFlightNumberChange(e.target.value)} placeholder="Enter flight number" required />
                 {form.errors?.flight_number && <div className="text-destructive text-sm mt-1">{form.errors.flight_number}</div>}
             </div>
 
@@ -212,7 +212,7 @@ export default function FlightForm<TForm extends { data: any; setData: (k: strin
 
             <div className="grid gap-2">
                 <Label htmlFor="aircraft_icao_code">Aircraft</Label>
-                <Select value={form.data.aircraft_icao_code || 'none'} onValueChange={(v: any) => form.setData('aircraft_icao_code', v === 'none' ? null : v)}>
+                <Select value={form.data.aircraft_icao_code || ''} onValueChange={(v: any) => form.setData('aircraft_icao_code', v || null)}>
                     <SelectTrigger id="aircraft_icao_code">
                         <SelectValue placeholder="Select aircraft" />
                     </SelectTrigger>
@@ -239,7 +239,6 @@ export default function FlightForm<TForm extends { data: any; setData: (k: strin
                                 >{ch}</button>
                             ))}
                         </div>
-                        <SelectItem value="none">None</SelectItem>
                         {((options.aircraft || []).filter((ac: any) => {
                             const matchesSearch = !aircraftSearch || 
                                 (ac.icao_code || '').toLowerCase().includes(aircraftSearch.toLowerCase()) ||
@@ -342,42 +341,26 @@ export default function FlightForm<TForm extends { data: any; setData: (k: strin
             <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                     <Label htmlFor="scheduled_departure_time">Scheduled Departure *</Label>
-                    <div className="relative">
-                        <Input 
-                            id="scheduled_departure_time" 
-                            type="datetime-local" 
-                            value={form.data.scheduled_departure_time} 
-                            onChange={(e: any) => form.setData('scheduled_departure_time', e.target.value)} 
-                            required 
-                            className="pr-10"
-                            placeholder="dd/mm/yyyy --:-- --"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        </span>
-                    </div>
+                    <Input 
+                        id="scheduled_departure_time" 
+                        type="datetime-local" 
+                        value={form.data.scheduled_departure_time} 
+                        onChange={(e: any) => form.setData('scheduled_departure_time', e.target.value)} 
+                        required 
+                        className="text-center"
+                    />
                     {form.errors?.scheduled_departure_time && <div className="text-destructive text-sm mt-1">{form.errors.scheduled_departure_time}</div>}
                 </div>
                 <div className="grid gap-2">
                     <Label htmlFor="scheduled_arrival_time">Scheduled Arrival *</Label>
-                    <div className="relative">
-                        <Input 
-                            id="scheduled_arrival_time" 
-                            type="datetime-local" 
-                            value={form.data.scheduled_arrival_time} 
-                            onChange={(e: any) => form.setData('scheduled_arrival_time', e.target.value)} 
-                            required 
-                            className="pr-10"
-                            placeholder="dd/mm/yyyy --:-- --"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        </span>
-                    </div>
+                    <Input 
+                        id="scheduled_arrival_time" 
+                        type="datetime-local" 
+                        value={form.data.scheduled_arrival_time} 
+                        onChange={(e: any) => form.setData('scheduled_arrival_time', e.target.value)} 
+                        required 
+                        className="text-center"
+                    />
                     {form.errors?.scheduled_arrival_time && <div className="text-destructive text-sm mt-1">{form.errors.scheduled_arrival_time}</div>}
                 </div>
             </div>
@@ -397,7 +380,7 @@ export default function FlightForm<TForm extends { data: any; setData: (k: strin
 
             <div className="grid gap-2">
                 <Label htmlFor="journey_type">Journey Type</Label>
-                <Select value={form.data.journey_type || 'direct'} onValueChange={(v: any) => form.setData('journey_type', v)}>
+                <Select value={form.data.journey_type || ''} onValueChange={(v: any) => form.setData('journey_type', v)}>
                     <SelectTrigger id="journey_type"><SelectValue placeholder="Select journey type" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="direct">Direct</SelectItem>

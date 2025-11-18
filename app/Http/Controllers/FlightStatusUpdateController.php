@@ -39,7 +39,7 @@ class FlightStatusUpdateController extends Controller
      */
     public function index(Request $request): Response
     {
-        // Get all flights
+        // Get flights with pagination
         $flights = Flight::with([
             'status',
             'airline',
@@ -49,8 +49,8 @@ class FlightStatusUpdateController extends Controller
             'baggageBelt'
         ])
             ->orderBy('scheduled_departure_time', 'desc')
-            ->get()
-            ->map(function ($flight) {
+            ->paginate(10)
+            ->through(function ($flight) {
                 return [
                     'id' => $flight->id,
                     'flight_number' => $flight->flight_number,
@@ -73,7 +73,8 @@ class FlightStatusUpdateController extends Controller
                         'status' => $flight->baggageBelt?->status,
                     ],
                 ];
-            });
+            })
+            ->withQueryString();
 
         // Get available options
         $statuses = FlightStatus::all(['id', 'status_code', 'status_name'])->map(function ($status) {

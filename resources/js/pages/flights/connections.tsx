@@ -15,6 +15,7 @@ import {
 import { Link, Head, usePage } from '@inertiajs/react';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
 import { useState, useEffect } from 'react';
 
 // Reuse types from index.tsx

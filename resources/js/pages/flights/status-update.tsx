@@ -74,7 +74,7 @@ export default function StatusUpdate({ flights, options }: Props) {
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Status Update', href: '/flights/status-update' },
+        { title: 'Flight Update', href: '/flights/status-update' },
     ];
 
     const handleSearch = () => {
@@ -134,14 +134,14 @@ export default function StatusUpdate({ flights, options }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Flight Status Update" />
+            <Head title="Flight Update" />
 
             <div className="space-y-6 py-6 px-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
                             <RefreshCw className="w-8 h-8 text-primary" />
-                            Flight Status Update
+                            Flight Update
                         </h1>
                         <p className="text-muted-foreground mt-1">
                             Quick interface to update flight status, gate, or baggage claim

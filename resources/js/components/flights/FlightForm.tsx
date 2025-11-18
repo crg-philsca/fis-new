@@ -174,7 +174,7 @@ export default function FlightForm<TForm extends { data: any; setData: (k: strin
                 <Label htmlFor="airline_code">Airline *</Label>
                 <Select value={form.data.airline_code ?? ''} onValueChange={(v: any) => form.setData('airline_code', v)}>
                     <SelectTrigger id="airline_code"><SelectValue placeholder="Select airline" /></SelectTrigger>
-                    <SelectContent className="max-h-72 overflow-auto w-[36rem] left-1/2 -translate-x-1/2">
+                    <SelectContent className="max-h-72 overflow-auto min-w-[var(--radix-select-trigger-width)] max-w-[90vw]">
                         <div className="px-2 py-2 border-b">
                             <Input
                                 placeholder="Search airline..."
@@ -192,7 +192,6 @@ export default function FlightForm<TForm extends { data: any; setData: (k: strin
                                     onMouseDown={(e) => e.preventDefault()}
                                     onClick={() => {
                                         setAirlineLetter(airlineLetter === ch ? null : ch);
-                                        setAirlineSearch('');
                                     }}
                                     className={`text-xs px-1 ${airlineLetter === ch ? 'underline font-bold' : ''}`}
                                 >{ch}</button>
@@ -217,7 +216,7 @@ export default function FlightForm<TForm extends { data: any; setData: (k: strin
                     <SelectTrigger id="aircraft_icao_code">
                         <SelectValue placeholder="Select aircraft" />
                     </SelectTrigger>
-                    <SelectContent className="max-h-72 overflow-auto w-[36rem] left-1/2 -translate-x-1/2">
+                    <SelectContent className="max-h-72 overflow-auto min-w-[var(--radix-select-trigger-width)] max-w-[90vw]">
                         <div className="px-2 py-2 border-b">
                             <Input
                                 placeholder="Search aircraft..."
@@ -235,7 +234,6 @@ export default function FlightForm<TForm extends { data: any; setData: (k: strin
                                     onMouseDown={(e) => e.preventDefault()}
                                     onClick={() => {
                                         setAircraftLetter(aircraftLetter === ch ? null : ch);
-                                        setAircraftSearch('');
                                     }}
                                     className={`text-xs px-1 ${aircraftLetter === ch ? 'underline font-bold' : ''}`}
                                 >{ch}</button>
@@ -264,7 +262,7 @@ export default function FlightForm<TForm extends { data: any; setData: (k: strin
                     <Label htmlFor="origin_code">Origin *</Label>
                     <Select value={form.data.origin_code ?? ''} onValueChange={(v: any) => form.setData('origin_code', v)}>
                         <SelectTrigger id="origin_code"><SelectValue placeholder="Select origin" /></SelectTrigger>
-                        <SelectContent className="max-h-72 overflow-auto w-[36rem] left-1/2 -translate-x-1/2">
+                        <SelectContent className="max-h-72 overflow-auto min-w-[var(--radix-select-trigger-width)] max-w-[90vw]">
                             <div className="px-2 py-2 border-b">
                                 <Input
                                     placeholder="Search origin..."
@@ -282,7 +280,6 @@ export default function FlightForm<TForm extends { data: any; setData: (k: strin
                                         onMouseDown={(e) => e.preventDefault()}
                                         onClick={() => {
                                             setOriginLetter(originLetter === ch ? null : ch);
-                                            setOriginSearch('');
                                         }}
                                         className={`text-xs px-1 ${originLetter === ch ? 'underline font-bold' : ''}`}
                                     >{ch}</button>
@@ -305,7 +302,7 @@ export default function FlightForm<TForm extends { data: any; setData: (k: strin
                     <Label htmlFor="destination_code">Destination *</Label>
                     <Select value={form.data.destination_code ?? ''} onValueChange={(v: any) => form.setData('destination_code', v)}>
                         <SelectTrigger id="destination_code"><SelectValue placeholder="Select destination" /></SelectTrigger>
-                        <SelectContent className="max-h-72 overflow-auto w-[36rem] left-1/2 -translate-x-1/2">
+                        <SelectContent className="max-h-72 overflow-auto min-w-[var(--radix-select-trigger-width)] max-w-[90vw]">
                             <div className="px-2 py-2 border-b">
                                 <Input
                                     placeholder="Search destination..."
@@ -323,7 +320,6 @@ export default function FlightForm<TForm extends { data: any; setData: (k: strin
                                         onMouseDown={(e) => e.preventDefault()}
                                         onClick={() => {
                                             setDestinationLetter(destinationLetter === ch ? null : ch);
-                                            setDestinationSearch('');
                                         }}
                                         className={`text-xs px-1 ${destinationLetter === ch ? 'underline font-bold' : ''}`}
                                     >{ch}</button>
@@ -389,7 +385,7 @@ export default function FlightForm<TForm extends { data: any; setData: (k: strin
             <div className="grid gap-2">
                 <Label htmlFor="status">Initial Status *</Label>
                 <Select value={form.data.status_id ?? ''} onValueChange={(v: any) => form.setData('status_id', v)}>
-                    <SelectTrigger id="status"><SelectValue /></SelectTrigger>
+                    <SelectTrigger id="status"><SelectValue placeholder="Select status" /></SelectTrigger>
                     <SelectContent>
                         {(options.statuses || []).map((s: any) => (
                             // Use the canonical `id_status_code` string as the value so backend receives the expected key
@@ -402,7 +398,7 @@ export default function FlightForm<TForm extends { data: any; setData: (k: strin
             <div className="grid gap-2">
                 <Label htmlFor="journey_type">Journey Type</Label>
                 <Select value={form.data.journey_type || 'direct'} onValueChange={(v: any) => form.setData('journey_type', v)}>
-                    <SelectTrigger id="journey_type"><SelectValue /></SelectTrigger>
+                    <SelectTrigger id="journey_type"><SelectValue placeholder="Select journey type" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="direct">Direct</SelectItem>
                         <SelectItem value="connecting">Connecting</SelectItem>
@@ -418,7 +414,7 @@ export default function FlightForm<TForm extends { data: any; setData: (k: strin
                         {options.connectingFlights || options.flights ? (
                             <Select value={form.data.connecting_departure_id ?? ''} onValueChange={(v: any) => form.setData('connecting_departure_id', v)}>
                                 <SelectTrigger id="connecting_departure_id"><SelectValue placeholder="Select connecting flight" /></SelectTrigger>
-                                <SelectContent className="max-h-72 overflow-auto w-[36rem] left-1/2 -translate-x-1/2">
+                                <SelectContent className="max-h-72 overflow-auto min-w-[var(--radix-select-trigger-width)] max-w-[90vw]">
                                     <div className="px-2 py-2 border-b">
                                         <Input
                                             placeholder="Search connecting flight..."
@@ -436,7 +432,6 @@ export default function FlightForm<TForm extends { data: any; setData: (k: strin
                                                 onMouseDown={(e) => e.preventDefault()}
                                                 onClick={() => {
                                                     setConnectingLetter(connectingLetter === ch ? null : ch);
-                                                    setConnectingSearch('');
                                                 }}
                                                 className={`text-xs px-1 ${connectingLetter === ch ? 'underline font-bold' : ''}`}
                                             >{ch}</button>

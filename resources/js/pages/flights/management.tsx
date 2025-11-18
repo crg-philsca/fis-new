@@ -190,7 +190,7 @@ export default function FlightManagement({ flights, filters, options }: Props) {
     
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Manage Flights', href: '/flights/management' },
+        { title: 'Flight Management', href: '/flights/management' },
     ];
 
     const handleSearch = (value: string) => {
@@ -250,7 +250,7 @@ export default function FlightManagement({ flights, filters, options }: Props) {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-                            <Plane className="w-8 h-8 text-primary" />
+                            <Plane className="w-8 h-8 text-orange-600 dark:text-orange-400" />
                             Flight Management
                         </h1>
                         <p className="text-muted-foreground mt-1">
@@ -364,6 +364,12 @@ export default function FlightManagement({ flights, filters, options }: Props) {
 
                 {/* Flights Table Card */}
                 <Card>
+                    <CardHeader>
+                        <CardTitle>All Flights</CardTitle>
+                        <CardDescription>
+                            View and manage all flight records. Click edit to update flight details.
+                        </CardDescription>
+                    </CardHeader>
                     <CardContent className="p-0">
                         <div className="overflow-x-auto">
                             <Table className="table-fixed">

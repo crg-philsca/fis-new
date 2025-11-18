@@ -49,9 +49,9 @@ export function NavMain() {
                 </SidebarMenu>
             </SidebarGroup>
 
-            {/* Flight Management Section */}
+            {/* Flight Tracking Section */}
             <SidebarGroup>
-                <SidebarGroupLabel>Flight Management</SidebarGroupLabel>
+                <SidebarGroupLabel>Flight Tracking</SidebarGroupLabel>
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton 
@@ -61,7 +61,7 @@ export function NavMain() {
                         >
                             <Link href={schedule.url('all')}>
                                 <Calendar className="w-4 h-4" />
-                                <span>All Schedules</span>
+                                <span>Schedules</span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -104,16 +104,22 @@ export function NavMain() {
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarGroup>
 
+            {/* Flight Operations Section */}
+            <SidebarGroup>
+                <SidebarGroupLabel>Flight Operations</SidebarGroupLabel>
+                <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton 
                             asChild 
                             isActive={currentUrl.includes('/flights/management')}
-                            tooltip="Manage Flights"
+                            tooltip="Flight Management"
                         >
                             <Link href="/flights/management">
-                                <Edit3 className="w-4 h-4" />
-                                <span>Manage Flights</span>
+                                <Edit3 className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                                <span>Flight Management</span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -122,11 +128,11 @@ export function NavMain() {
                         <SidebarMenuButton 
                             asChild 
                             isActive={currentUrl.includes('/flights/status-update')}
-                            tooltip="Status Update"
+                            tooltip="Flight Update"
                         >
                             <Link href="/flights/status-update">
                                 <Zap className="w-4 h-4" />
-                                <span>Status Update</span>
+                                <span>Flight Update</span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>

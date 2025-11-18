@@ -9,10 +9,12 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    useSidebar,
 } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import { BookOpen, Folder } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import AppLogo from './app-logo';
 
 const footerNavItems: NavItem[] = [
@@ -29,6 +31,9 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+    const { state } = useSidebar();
+    const isCollapsed = state === 'collapsed';
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -36,7 +41,10 @@ export function AppSidebar() {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
                             <Link href="/dashboard">
-                                <div className="flex items-center gap-2">
+                                <div className={cn(
+                                    "flex items-center gap-2",
+                                    isCollapsed ? "justify-start" : "justify-center"
+                                )}>
                                     <span className="font-semibold text-xl">FIS</span>
                                 </div>
                             </Link>

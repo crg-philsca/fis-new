@@ -6,26 +6,15 @@ import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
     Search, 
-    Pencil,
-    Trash2,
     Route as RouteIcon,
     ArrowRight,
     Clock,
     MapPin,
     Plane
 } from 'lucide-react';
-import { Link, Head, router, usePage } from '@inertiajs/react';
+import { Link, Head, usePage } from '@inertiajs/react';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Badge } from '@/components/ui/badge';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { format } from 'date-fns';
 import { useState, useEffect } from 'react';
 
 // Reuse types from index.tsx
@@ -93,6 +82,10 @@ interface Flight {
     };
     gate?: Gate;
     baggageBelt?: BaggageBelt;
+    terminal?: {
+        terminal_code?: string;
+        name?: string;
+    };
     
     // Connection info
     inbound_connections?: FlightConnection[];
@@ -118,8 +111,6 @@ export default function FlightConnections({ flights, title }: Props) {
     const [searchQuery, setSearchQuery] = useState('');
     const [filteredFlights, setFilteredFlights] = useState(flights.data);
     const [lastUpdate, setLastUpdate] = useState(new Date());
-    const [selectedFlight, setSelectedFlight] = useState<any>(null);
-    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const page = usePage<SharedData>();
     const userTimezone = (page.props as any).user_timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
     
@@ -133,6 +124,22 @@ export default function FlightConnections({ flights, title }: Props) {
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: false
+            }).format(date);
+        } catch {
+            return 'N/A';
+        }
+    };
+
+    // Format date
+    const formatDate = (dateString: string | null): string => {
+        if (!dateString) return 'N/A';
+        try {
+            const date = new Date(dateString);
+            return new Intl.DateTimeFormat('en-GB', {
+                timeZone: userTimezone,
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
             }).format(date);
         } catch {
             return 'N/A';
@@ -183,21 +190,6 @@ export default function FlightConnections({ flights, title }: Props) {
         }
     };
 
-    const handleDelete = (flight: any) => {
-        setSelectedFlight(flight);
-        setShowDeleteDialog(true);
-    };
-
-    const confirmDelete = () => {
-        if (selectedFlight) {
-            router.delete(`/flights/management/${selectedFlight.id}`, {
-                onSuccess: () => {
-                    setShowDeleteDialog(false);
-                    setSelectedFlight(null);
-                },
-            });
-        }
-    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -258,14 +250,15 @@ export default function FlightConnections({ flights, title }: Props) {
                                         <TableHead>Connection Type</TableHead>
                                         <TableHead>Schedule</TableHead>
                                         <TableHead>Status</TableHead>
+                                        <TableHead>Terminal</TableHead>
                                         <TableHead>Gate</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
+                                        <TableHead>Baggage Belt</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {filteredFlights.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={7} className="h-24 text-center">
+                                            <TableCell colSpan={8} className="h-24 text-center">
                                                 <div className="flex flex-col items-center justify-center text-muted-foreground">
                                                     <RouteIcon className="w-8 h-8 mb-2 opacity-50" />
                                                     <p>No connecting flights found</p>
@@ -305,15 +298,21 @@ export default function FlightConnections({ flights, title }: Props) {
                                                 <TableCell>
                                                     <div className="flex flex-col gap-1">
                                                         {flight.inbound_connections && flight.inbound_connections.length > 0 && (
-                                                            <Badge variant="outline" className="w-fit text-xs">
+                                                            <Badge variant="outline" className="w-fit text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800">
                                                                 <Plane className="w-3 h-3 mr-1 rotate-180" />
                                                                 {flight.inbound_connections.length} Inbound
                                                             </Badge>
                                                         )}
                                                         {flight.outbound_connections && flight.outbound_connections.length > 0 && (
-                                                            <Badge variant="outline" className="w-fit text-xs">
+                                                            <Badge variant="outline" className="w-fit text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
                                                                 <Plane className="w-3 h-3 mr-1" />
                                                                 {flight.outbound_connections.length} Outbound
+                                                            </Badge>
+                                                        )}
+                                                        {(!flight.inbound_connections || flight.inbound_connections.length === 0) && 
+                                                         (!flight.outbound_connections || flight.outbound_connections.length === 0) && (
+                                                            <Badge variant="outline" className="w-fit text-xs bg-gray-50 dark:bg-gray-900/20 text-gray-700 dark:text-gray-400">
+                                                                No connections
                                                             </Badge>
                                                         )}
                                                     </div>
@@ -322,16 +321,22 @@ export default function FlightConnections({ flights, title }: Props) {
                                                 {/* Schedule */}
                                                 <TableCell>
                                                     <div className="flex flex-col gap-1 text-sm">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                                                            <span className="text-xs text-muted-foreground">Dep:</span>
-                                                            <span>{formatTime(flight.scheduled_departure_time)}</span>
-                                                        </div>
-                                                        {flight.scheduled_arrival_time && (
+                                                        <div className="flex flex-col">
                                                             <div className="flex items-center gap-1.5">
                                                                 <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                                                                <span className="text-xs text-muted-foreground">Arr:</span>
-                                                                <span>{formatTime(flight.scheduled_arrival_time)}</span>
+                                                                <span className="text-xs text-muted-foreground">Dep:</span>
+                                                                <span className="font-medium">{formatTime(flight.scheduled_departure_time)}</span>
+                                                            </div>
+                                                            <span className="text-xs text-muted-foreground ml-5">{formatDate(flight.scheduled_departure_time)}</span>
+                                                        </div>
+                                                        {flight.scheduled_arrival_time && (
+                                                            <div className="flex flex-col">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                                                                    <span className="text-xs text-muted-foreground">Arr:</span>
+                                                                    <span className="font-medium">{formatTime(flight.scheduled_arrival_time)}</span>
+                                                                </div>
+                                                                <span className="text-xs text-muted-foreground ml-5">{formatDate(flight.scheduled_arrival_time)}</span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -347,45 +352,59 @@ export default function FlightConnections({ flights, title }: Props) {
                                                     </Badge>
                                                 </TableCell>
 
-                                                {/* Gate */}
+                                                {/* Terminal */}
                                                 <TableCell>
-                                                    {flight.gate ? (
-                                                        <div className="flex items-center gap-1.5 text-sm">
-                                                            <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
-                                                            <span>{flight.gate.gate_number}</span>
-                                                            {flight.gate.terminal && (
+                                                    {flight.terminal ? (
+                                                        <div className="flex flex-col text-sm">
+                                                            <span className="font-medium">{flight.terminal.terminal_code || flight.terminal.name || 'N/A'}</span>
+                                                            {flight.terminal.name && flight.terminal.terminal_code && (
+                                                                <span className="text-xs text-muted-foreground">{flight.terminal.name}</span>
+                                                            )}
+                                                        </div>
+                                                    ) : (flight.gate?.terminal || flight.baggageBelt?.terminal) ? (
+                                                        <div className="flex flex-col text-sm">
+                                                            <span className="font-medium">
+                                                                {(flight.gate?.terminal || flight.baggageBelt?.terminal)?.terminal_code || 
+                                                                 (flight.gate?.terminal || flight.baggageBelt?.terminal)?.name || 'N/A'}
+                                                            </span>
+                                                            {(flight.gate?.terminal || flight.baggageBelt?.terminal)?.name && (
                                                                 <span className="text-xs text-muted-foreground">
-                                                                    ({flight.gate.terminal.terminal_name})
+                                                                    {(flight.gate?.terminal || flight.baggageBelt?.terminal)?.name}
                                                                 </span>
                                                             )}
                                                         </div>
                                                     ) : (
-                                                        <span className="text-xs text-muted-foreground">TBA</span>
+                                                        <span className="font-bold text-sm">N/A</span>
                                                     )}
                                                 </TableCell>
 
-                                                {/* Actions */}
-                                                <TableCell className="text-right">
-                                                    <div className="flex items-center justify-end gap-1">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8 text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-900/20"
-                                                            onClick={() => {
-                                                                router.visit(`/flights/management?edit=${flight.id}`);
-                                                            }}
-                                                        >
-                                                            <Pencil className="w-4 h-4" />
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                                            onClick={() => handleDelete(flight)}
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </Button>
-                                                    </div>
+                                                {/* Gate */}
+                                                <TableCell>
+                                                    {(flight.departure?.gate || flight.gate) ? (
+                                                        <div className="flex items-center gap-1.5 text-sm">
+                                                            <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                                                            <span className="font-medium">
+                                                                {(flight.departure?.gate || flight.gate)?.gate_number || 
+                                                                 (flight.departure?.gate || flight.gate)?.gate_code || 'N/A'}
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="font-bold text-sm">N/A</span>
+                                                    )}
+                                                </TableCell>
+
+                                                {/* Baggage Belt */}
+                                                <TableCell>
+                                                    {(flight.arrival?.baggage_belt || flight.baggageBelt) ? (
+                                                        <div className="flex items-center gap-1.5 text-sm">
+                                                            <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                                                            <span className="font-medium">
+                                                                {(flight.arrival?.baggage_belt || flight.baggageBelt)?.belt_code || 'N/A'}
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="font-bold text-sm">N/A</span>
+                                                    )}
                                                 </TableCell>
                                             </TableRow>
                                         ))
@@ -416,27 +435,6 @@ export default function FlightConnections({ flights, title }: Props) {
                         )}
                     </CardContent>
                 </Card>
-
-                {/* Delete Confirmation Dialog */}
-                <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Delete Flight</DialogTitle>
-                            <DialogDescription>
-                                Are you sure you want to delete flight {selectedFlight?.flight_number}?
-                                This action cannot be undone.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-                                Cancel
-                            </Button>
-                            <Button variant="destructive" onClick={confirmDelete}>
-                                Delete Flight
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
             </div>
         </AppLayout>
     );
